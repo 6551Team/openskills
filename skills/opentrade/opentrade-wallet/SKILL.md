@@ -8,48 +8,58 @@ metadata:
   homepage: "https://6551.io"
 ---
 
-# OpenTrade Wallet Portfolio Skill
+# OpenTrade Wallet Portfolio CLI
 
-4 API endpoints for wallet balance queries, portfolio value, and transaction history via HTTP.
+4 commands for supported chains, wallet total value, all token balances, and specific token balances.
 
-## Prerequisites
+## Pre-flight Checks
 
-Get your API token at: https://6551.io/mcp
+Every time before running any `opentrade` command, always follow these steps in order. Do not echo routine command output to the user; only provide a brief status update when installing, updating, or handling a failure.
 
-Set environment variable:
-```bash
-export OPEN_TOKEN="your_token_here"
-```
+1. **Confirm installed**: Run `which opentrade`. If not found, install it:
+   ```bash
+   curl -sSL https://raw.githubusercontent.com/6551/openskills/main/install.sh | sh
+   ```
+   If the install script fails, ask the user to install manually following the instructions at: https://github.com/6551/openskills
 
-Or create a config file:
-- macOS/Linux: `~/.config/openskills/credentials.json`
-- Windows: `%APPDATA%\openskills\credentials.json`
+2. **Check for updates**: Read `~/.opentrade/last_check` and compare it with the current timestamp:
+   ```bash
+   cached_ts=$(cat ~/.opentrade/last_check 2>/dev/null || true)
+   now=$(date +%s)
+   ```
+   - If `cached_ts` is non-empty and `(now - cached_ts) < 43200` (12 hours), skip the update and proceed.
+   - Otherwise (file missing or older than 12 hours), run the installer to check for updates:
+     ```bash
+     curl -sSL https://raw.githubusercontent.com/6551/openskills/main/install.sh | sh
+     ```
+     If a newer version is installed, tell the user and suggest updating their opentrade skills from https://github.com/6551/openskills to get the latest features.
+3. If any `opentrade` command fails with an unexpected error during this
+   session, try reinstalling before giving up:
+   ```bash
+   curl -sSL https://raw.githubusercontent.com/6551/openskills/main/install.sh | sh
+   ```
+4. **Authentication**: Get your API token at https://6551.io/mcp and set it:
+   ```bash
+   export OPEN_TOKEN="your_token_here"
+   ```
+   Or create a config file:
+   - macOS/Linux: `~/.config/openskills/credentials.json`
+   - Windows: `%APPDATA%\openskills\credentials.json`
 
-Config file format:
-```json
-{
-  "token": "your-token-here"
-}
-```
+   Config file format:
+   ```json
+   {
+     "token": "your-token-here"
+   }
+   ```
+   Priority: Environment variable > Config file
 
-Priority: Environment variable > Config file
-
-## Skill Routing
-
-- For token prices / K-lines → use `opentrade-market`
-- For token search / metadata → use `opentrade-token`
-- For swap execution → use `opentrade-dex-swap`
-- For transaction broadcasting → use `opentrade-transaction`
-
-## Quickstart
-
-### Router Discovery
+## Router Discovery
 
 **IMPORTANT**: If the user has not specified a trading router, you MUST first discover available routers:
 
 ```bash
-curl -s -H "Authorization: Bearer $OPEN_TOKEN" \
-  "https://ai.6551.io/open/trader/routers"
+opentrade trade routers
 ```
 
 **Response format:**
@@ -72,34 +82,35 @@ curl -s -H "Authorization: Bearer $OPEN_TOKEN" \
 
 **Usage:**
 - Extract `router` and `version` from the response
-- Use these values to construct API URLs: `https://ai.6551.io/open/trader/{router}/{version}/...`
+- Use these values in subsequent commands with `--router` and `--version` flags
 - **Default fallback**: If the API returns no data or is empty, use `router=okx` and `version=v1`
 
-**Example:**
-- If response contains `"router": "okx"` and `"version": "v1"`, use: `https://ai.6551.io/open/trader/okx/v1/wallet/balance`
-- If response is empty, use: `https://ai.6551.io/open/trader/okx/v1/wallet/balance`
+## Skill Routing
+
+- For token prices / K-lines → use `opentrade-market`
+- For token search / metadata → use `opentrade-token`
+- For swap execution → use `opentrade-dex-swap`
+- For transaction broadcasting → use `opentrade-transaction`
+
+## Quickstart
 
 ```bash
-# Get all token balances for a wallet
-curl -s -H "Authorization: Bearer $OPEN_TOKEN" \
-  "https://ai.6551.io/open/trader/{router}/{version}/balance/all-balances?address=0xYourWallet&chainIndex=1"
+# Get supported chains for balance queries
+opentrade portfolio chains --router okx --version v1
 
-# Get total portfolio value
-curl -s -H "Authorization: Bearer $OPEN_TOKEN" \
-  "https://ai.6551.io/open/trader/{router}/{version}/balance/total-value?address=0xYourWallet&chainIndex=1"
+# Get total asset value on XLayer
+opentrade portfolio total-value --address 0xYourWallet --chain xlayer --router okx --version v1
 
-# Batch query specific token balances
-curl -s -X POST -H "Authorization: Bearer $OPEN_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"address":"0xYourWallet","chainIndex":"1","tokenAddresses":["0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48","0xdAC17F958D2ee523a2206206994597C13D831ec7"]}' \
-  "https://ai.6551.io/open/trader/{router}/{version}/balance/token-balances"
+# Get all token balances
+opentrade portfolio all-balances --address 0xYourWallet --chain xlayer --router okx --version v1
 
-# Get transaction history
-curl -s -H "Authorization: Bearer $OPEN_TOKEN" \
-  "https://ai.6551.io# NOT AVAILABLE: /open/trader/{router}/{version}/balance/transactions?address=0xYourWallet&chainIndex=1&limit=20&offset=0"
+# Check specific tokens (native OKB + USDC on XLayer)
+opentrade portfolio token-balances --address 0xYourWallet --tokens "196:,196:0x74b7f16337b8972027f6196a17a631ac6de26d22" --router okx --version v1
 ```
 
 ## Chain Name Support
+
+The CLI accepts human-readable chain names and resolves them automatically.
 
 | Chain | Name | chainIndex |
 |---|---|---|
@@ -112,248 +123,364 @@ curl -s -H "Authorization: Bearer $OPEN_TOKEN" \
 | Polygon | `polygon` | `137` |
 | Optimism | `optimism` | `10` |
 | Avalanche | `avalanche` | `43114` |
+| Fantom | `fantom` | `250` |
+| Cronos | `cronos` | `25` |
+| Gnosis | `gnosis` | `100` |
+| Moonbeam | `moonbeam` | `1284` |
+| Moonriver | `moonriver` | `1285` |
+| Celo | `celo` | `42220` |
+| Aurora | `aurora` | `1313161554` |
+| Harmony | `harmony` | `1666600000` |
+| Boba | `boba` | `288` |
+| Metis | `metis` | `1088` |
+| Klaytn | `klaytn` | `8217` |
+| Fuse | `fuse` | `122` |
 
-**Address format note**: EVM addresses (`0x...`) work across Ethereum/BSC/Polygon/Arbitrum/Base etc. Solana addresses (Base58) have different format. Do NOT mix formats across chain types.
-
-## API Index
-
-| # | API Name | API Endpoint | Description |
-|---|---|---|---|
-| 1 | AllBalances | GET `/trader/{router}/{version}/balance/all-balances` | Get all token balances for a wallet |
-| 2 | TotalValue | GET `/trader/{router}/{version}/balance/total-value` | Get total portfolio value in USD |
-| 3 | Balances | POST `/trader/{router}/{version}/balance/token-balances` | Batch query specific token balances |
-| 4 | Transactions | GET `/trader/{router}/{version}/balance/history` | Get address transaction history |
-
-## Cross-Skill Workflows
-
-This skill is often used **before swap** (to verify sufficient balance) or **as portfolio entry point**.
-
-### Workflow A: Pre-Swap Balance Check
-
-> User: "Swap 1 SOL for BONK"
-
-```
-1. opentrade-token     → search BONK (get tokenContractAddress)
-       ↓ tokenContractAddress
-2. opentrade-wallet    → get all balances (verify SOL balance >= 1)
-       ↓ balance field (UI units) → convert to minimal units for swap
-3. opentrade-dex-swap  → get quote (from SOL to BONK)
-4. opentrade-dex-swap  → execute swap
-5. opentrade-transaction → broadcast
-6. opentrade-wallet    → verify new balance
-```
-
-**Data handoff**:
-- `tokenContractAddress` from token search → feeds into swap `fromTokenAddress` / `toTokenAddress`
-- `balance` from wallet is **UI units**; swap needs **minimal units** → multiply by `10^decimal`
-- If balance < required amount → inform user, do NOT proceed to swap
-
-### Workflow B: Portfolio Overview + Analysis
-
-> User: "Show me my portfolio"
-
-```
-1. opentrade-wallet    → get total value (USD value across all chains)
-2. opentrade-wallet    → get all balances (list all tokens)
-       ↓ top holdings by USD value
-3. opentrade-token     → get price-info (enrich with 24h change, market cap)
-4. opentrade-market    → get K-line (price charts for tokens of interest)
-```
-
-**Data handoff**:
-- `address` from user → used in all wallet queries
-- `tokenAddresses` from step 2 → used in step 3 for enriched analytics
-
-### Workflow C: Check Specific Token Balance
-
-> User: "How much USDC do I have?"
-
-```
-1. opentrade-token     → search USDC (get token address)
-2. opentrade-wallet    → get token-balances (query specific token)
-3. opentrade-market    → get price (current USD value)
-```
-
-### Workflow D: Sell Underperforming Tokens
-
-```
-1. opentrade-wallet    → get all balances (list all holdings)
-       ↓ tokenContractAddress + chainIndex for each
-2. opentrade-token     → get price-info (get priceChange24H per token)
-3. Filter by negative change → user confirms which to sell
-4. opentrade-dex-swap  → get quote → execute swap → sell
-5. opentrade-transaction → broadcast
-```
-
-**Key conversion**: `balance` (UI units) × `10^decimal` = `amount` (minimal units) for swap.
-
-## Operation Flow
-
-### Step 1: Identify Intent
-
-- Check all token balances → AllBalances command
-- Get portfolio total value → TotalValue command
-- Check specific token balances → Balances command
-- View transaction history → Transactions command
-
-### Step 2: Collect Parameters
-
-- Missing wallet address → ask user for their wallet address
-- Missing chain → ask which chain, or check all major chains (Ethereum, BSC, Polygon)
-- For specific tokens → use `opentrade-token` Search to get token addresses
-- For transaction history → ask how many transactions to show (default 20)
-
-### Step 3: Call and Display
-
-- Call API endpoint with parameters
-- Display results with appropriate formatting
-- Show token amounts in UI units with symbols
-- Display USD values alongside token amounts
-- Sort by USD value descending for portfolio view
-
-### Step 4: Suggest Next Steps
-
-| Just called | Suggest |
-|---|---|
-| AllBalances | 1. Get total value → TotalValue 2. View price charts → `opentrade-market` 3. Execute swap → `opentrade-dex-swap` |
-| TotalValue | 1. View detailed balances → AllBalances 2. View transaction history → Transactions |
-| Balances | 1. Get current prices → `opentrade-market` 2. Execute swap → `opentrade-dex-swap` |
-| Transactions | 1. Check current balances → AllBalances 2. View token details → `opentrade-token` |
-
-## API Reference
-
-### 1. AllBalances
-
-Get all token balances for a wallet address (including native token).
+## Command Index
 
 ```bash
-curl -s -H "Authorization: Bearer $OPEN_TOKEN" \
-  "https://ai.6551.io/open/trader/{router}/{version}/balance/all-balances?address=<address>&chainIndex=<chain>"
+opentrade portfolio chains          # List supported chains
+opentrade portfolio total-value     # Get total portfolio value
+opentrade portfolio all-balances    # Get all token balances
+opentrade portfolio token-balances  # Get specific token balances
+```
+
+---
+
+## 1. Get Supported Chains
+
+List all chains supported for balance queries.
+
+```bash
+opentrade portfolio chains --router okx --version v1
 ```
 
 **Parameters:**
-| Param | Required | Description |
-|---|---|---|
-| `address` | Yes | Wallet address |
-| `chainIndex` | Yes | Chain ID |
+- `--router` (required): Router name from router discovery
+- `--version` (required): Router version from router discovery
 
-**Response fields:**
-- `tokens[]`: Array of token balances
-  - `tokenAddress`: Token contract address (empty string `""` for native token)
-  - `symbol`: Token symbol
-  - `balance`: Token balance in minimal units
-  - `decimals`: Token decimals
-  - `price`: Current price in USD
-  - `value`: USD value of holdings
+**Response:**
+```json
+{
+  "data": [
+    {"chainIndex": "1", "chainName": "Ethereum"},
+    {"chainIndex": "56", "chainName": "BSC"},
+    {"chainIndex": "137", "chainName": "Polygon"},
+    {"chainIndex": "196", "chainName": "XLayer"},
+    {"chainIndex": "501", "chainName": "Solana"},
+    {"chainIndex": "8453", "chainName": "Base"}
+  ],
+  "success": true
+}
+```
 
-### 2. TotalValue
+**Example:**
+```bash
+opentrade portfolio chains --router okx --version v1
+# → Display: Ethereum (1), BSC (56), Polygon (137), XLayer (196), Solana (501), Base (8453), ...
+```
 
-Get total portfolio value in USD for a wallet.
+---
+
+## 2. Get Total Portfolio Value
+
+Get the total USD value of all assets in a wallet.
 
 ```bash
-curl -s -H "Authorization: Bearer $OPEN_TOKEN" \
-  "https://ai.6551.io/open/trader/{router}/{version}/balance/total-value?address=<address>&chainIndex=<chain>"
+opentrade portfolio total-value \
+  --address 0xYourWalletAddress \
+  --chain xlayer \
+  --router okx \
+  --version v1
 ```
 
 **Parameters:**
-| Param | Required | Description |
-|---|---|---|
-| `address` | Yes | Wallet address |
-| `chainIndex` | Yes | Chain ID |
+- `--address` (required): Wallet address (EVM or Solana format)
+- `--chain` (required): Chain name or chainIndex (e.g., `xlayer`, `196`, `ethereum`, `1`)
+- `--router` (required): Router name from router discovery
+- `--version` (required): Router version from router discovery
+- `--asset-type` (optional): `0`=all (default), `1`=tokens only, `2`=DeFi only
+- `--exclude-risk` (optional): Exclude risky/scam tokens (only works on ETH/BSC/SOL/BASE)
 
-**Response fields:**
-- `totalValue`: Total portfolio value in USD
-- `currency`: Currency (USD)
-
-### 3. Balances
-
-Batch query specific token balances.
-
-```bash
-curl -s -X POST -H "Authorization: Bearer $OPEN_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"address":"<address>","chainIndex":"<chain>","tokenAddresses":["<token1>","<token2>"]}' \
-  "https://ai.6551.io/open/trader/{router}/{version}/balance/token-balances"
+**Response:**
+```json
+{
+  "data": {
+    "totalValue": "12345.67"
+  },
+  "success": true
+}
 ```
 
-**Request body:**
-| Field | Required | Description |
-|---|---|---|
-| `address` | Yes | Wallet address |
-| `chainIndex` | Yes | Chain ID |
-| `tokenAddresses` | Yes | Array of token contract addresses |
-
-**Response fields:**
-- `balances[]`: Array of token balances
-  - `tokenAddress`: Token contract address
-  - `balance`: Token balance in minimal units
-  - `symbol`: Token symbol
-  - `decimals`: Token decimals
-
-### 4. Transactions
-
-Get transaction history for a wallet address.
+**Examples:**
 
 ```bash
-curl -s -H "Authorization: Bearer $OPEN_TOKEN" \
-  "https://ai.6551.io# NOT AVAILABLE: /open/trader/{router}/{version}/portfolio/transactions?address=<address>&chainIndex=<chain>&limit=<n>&offset=<offset>"
+# Get total value on XLayer
+opentrade portfolio total-value --address 0xYourWallet --chain xlayer --router okx --version v1
+# → Display: Total Portfolio Value: $12,345.67
+
+# Get only token value (exclude DeFi positions)
+opentrade portfolio total-value --address 0xYourWallet --chain ethereum --asset-type 1 --router okx --version v1
+# → Display: Token Value: $8,500.00
+
+# Get only DeFi positions
+opentrade portfolio total-value --address 0xYourWallet --chain ethereum --asset-type 2 --router okx --version v1
+# → Display: DeFi Value: $3,845.67
+
+# Exclude risky tokens on Ethereum
+opentrade portfolio total-value --address 0xYourWallet --chain ethereum --exclude-risk --router okx --version v1
+# → Display: Total Portfolio Value (Safe Assets): $11,200.00
+```
+
+---
+
+## 3. Get All Token Balances
+
+Get detailed balance information for all tokens in a wallet.
+
+```bash
+opentrade portfolio all-balances \
+  --address 0xYourWalletAddress \
+  --chain xlayer \
+  --router okx \
+  --version v1
 ```
 
 **Parameters:**
-| Param | Required | Default | Description |
-|---|---|---|---|
-| `address` | Yes | - | Wallet address |
-| `chainIndex` | Yes | - | Chain ID |
-| `limit` | No | `20` | Number of transactions to return (max 100) |
-| `offset` | No | `0` | Pagination offset |
+- `--address` (required): Wallet address (EVM or Solana format)
+- `--chain` (required): Chain name or chainIndex (e.g., `xlayer`, `196`)
+- `--router` (required): Router name from router discovery
+- `--version` (required): Router version from router discovery
+- `--exclude-risk` (optional): Exclude risky/scam tokens (only works on ETH/BSC/SOL/BASE)
 
-**Response fields:**
-- `transactions[]`: Array of transactions
-  - `txHash`: Transaction hash
-  - `blockNumber`: Block number
-  - `timestamp`: Transaction timestamp
-  - `from`: Sender address
-  - `to`: Recipient address
-  - `value`: Transfer value in minimal units
-  - `tokenAddress`: Token contract address (empty for native token)
-  - `tokenSymbol`: Token symbol
-  - `type`: Transaction type (transfer, swap, etc.)
-- `total`: Total number of transactions
-
-## Input / Output Examples
-
-**User says:** "Check my wallet balance on Ethereum"
-
-```bash
-curl -s -H "Authorization: Bearer $OPEN_TOKEN" \
-  "https://ai.6551.io/open/trader/{router}/{version}/portfolio/all-balances?address=0x...&chainIndex=1"
-# → Display: ETH: 1.5 ($4,500), USDC: 1000 ($1,000), Total: $5,500
+**Response:**
+```json
+{
+  "data": [
+    {
+      "tokenAddress": "",
+      "tokenSymbol": "OKB",
+      "tokenName": "OKB",
+      "balance": "10500000000000000000",
+      "decimals": 18,
+      "priceUsd": "48.50",
+      "valueUsd": "509.25"
+    },
+    {
+      "tokenAddress": "0x74b7f16337b8972027f6196a17a631ac6de26d22",
+      "tokenSymbol": "USDC",
+      "tokenName": "USD Coin",
+      "balance": "2000000000",
+      "decimals": 6,
+      "priceUsd": "1.00",
+      "valueUsd": "2000.00"
+    }
+  ],
+  "success": true
+}
 ```
 
-**User says:** "How much is my portfolio worth?"
+**Examples:**
 
 ```bash
-curl -s -H "Authorization: Bearer $OPEN_TOKEN" \
-  "https://ai.6551.io/open/trader/{router}/{version}/portfolio/total-value?address=0x...&chainIndex=1"
-# → Display: Total portfolio value: $10,500
+# Get all balances on XLayer
+opentrade portfolio all-balances --address 0xYourWallet --chain xlayer --router okx --version v1
+# → Display:
+#   OKB:  10.5 ($509.25)
+#   USDC: 2,000 ($2,000.00)
+#   USDT: 1,500 ($1,500.00)
+#   ...
+
+# Get all balances excluding risky tokens
+opentrade portfolio all-balances --address 0xYourWallet --chain ethereum --exclude-risk --router okx --version v1
+# → Display: (only verified/safe tokens)
+
+# Get balances on Solana
+opentrade portfolio all-balances --address YourSolanaAddress --chain solana --router okx --version v1
+# → Display:
+#   SOL:  5.2 ($520.00)
+#   USDC: 1,000 ($1,000.00)
+#   ...
 ```
 
-**User says:** "Show my recent transactions"
+---
+
+## 4. Get Specific Token Balances
+
+Query balances for specific tokens only.
 
 ```bash
-curl -s -H "Authorization: Bearer $OPEN_TOKEN" \
-  "https://ai.6551.io# NOT AVAILABLE: /open/trader/{router}/{version}/portfolio/transactions?address=0x...&chainIndex=1&limit=10"
-# → Display: Last 10 transactions with timestamps, amounts, and token symbols
+opentrade portfolio token-balances \
+  --address 0xYourWalletAddress \
+  --tokens "196:,196:0x74b7f16337b8972027f6196a17a631ac6de26d22" \
+  --router okx \
+  --version v1
 ```
+
+**Parameters:**
+- `--address` (required): Wallet address (EVM or Solana format)
+- `--tokens` (required): Comma-separated list of `chainIndex:tokenAddress` pairs (max 20)
+  - Native token: `chainIndex:` (empty address)
+  - ERC-20 token: `chainIndex:0xContractAddress` (lowercase)
+- `--router` (required): Router name from router discovery
+- `--version` (required): Router version from router discovery
+
+**Token Format:**
+- `196:` → Native OKB on XLayer (chainIndex 196)
+- `196:0x74b7f16337b8972027f6196a17a631ac6de26d22` → USDC on XLayer
+- `1:` → Native ETH on Ethereum
+- `1:0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48` → USDC on Ethereum
+- `501:` → Native SOL on Solana
+
+**Response:**
+```json
+{
+  "data": [
+    {
+      "chainIndex": "196",
+      "tokenAddress": "",
+      "tokenSymbol": "OKB",
+      "tokenName": "OKB",
+      "balance": "10500000000000000000",
+      "decimals": 18,
+      "priceUsd": "48.50",
+      "valueUsd": "509.25"
+    },
+    {
+      "chainIndex": "196",
+      "tokenAddress": "0x74b7f16337b8972027f6196a17a631ac6de26d22",
+      "tokenSymbol": "USDC",
+      "tokenName": "USD Coin",
+      "balance": "2000000000",
+      "decimals": 6,
+      "priceUsd": "1.00",
+      "valueUsd": "2000.00"
+    }
+  ],
+  "success": true
+}
+```
+
+**Examples:**
+
+```bash
+# Check native OKB and USDC on XLayer
+opentrade portfolio token-balances --address 0xYourWallet --tokens "196:,196:0x74b7f16337b8972027f6196a17a631ac6de26d22" --router okx --version v1
+# → Display:
+#   OKB:  10.5 ($509.25)
+#   USDC: 2,000 ($2,000.00)
+
+# Check ETH and USDC on Ethereum
+opentrade portfolio token-balances --address 0xYourWallet --tokens "1:,1:0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48" --router okx --version v1
+# → Display:
+#   ETH:  2.5 ($5,000.00)
+#   USDC: 10,000 ($10,000.00)
+
+# Check multiple tokens across chains
+opentrade portfolio token-balances --address 0xYourWallet --tokens "196:,1:,56:0x55d398326f99059ff775485246999027b3197955" --router okx --version v1
+# → Display:
+#   OKB (XLayer):  10.5 ($509.25)
+#   ETH (Ethereum): 2.5 ($5,000.00)
+#   USDT (BSC):     5,000 ($5,000.00)
+```
+
+---
+
+## Workflow Examples
+
+### Check Portfolio Value
+
+**User says:** "What's my total portfolio worth on XLayer?"
+
+```bash
+opentrade portfolio total-value --address 0xYourWallet --chain xlayer --router okx --version v1
+# → Display: Total Portfolio Value: $12,345.67
+```
+
+### View All Holdings
+
+**User says:** "Show me all my tokens on Ethereum"
+
+```bash
+opentrade portfolio all-balances --address 0xYourWallet --chain ethereum --router okx --version v1
+# → Display:
+#   ETH:  2.5 ($5,000.00)
+#   USDC: 10,000 ($10,000.00)
+#   USDT: 5,000 ($5,000.00)
+#   DAI:  3,000 ($3,000.00)
+#   ...
+```
+
+### Check Specific Tokens
+
+**User says:** "How much OKB and USDC do I have on XLayer?"
+
+```bash
+opentrade portfolio token-balances --address 0xYourWallet --tokens "196:,196:0x74b7f16337b8972027f6196a17a631ac6de26d22" --router okx --version v1
+# → Display:
+#   OKB:  10.5 ($509.25)
+#   USDC: 2,000 ($2,000.00)
+```
+
+### Multi-Chain Portfolio
+
+**User says:** "What's my total portfolio across all chains?"
+
+```bash
+# Check XLayer
+opentrade portfolio total-value --address 0xYourWallet --chain xlayer --router okx --version v1
+# → $12,345.67
+
+# Check Ethereum
+opentrade portfolio total-value --address 0xYourWallet --chain ethereum --router okx --version v1
+# → $25,000.00
+
+# Check BSC
+opentrade portfolio total-value --address 0xYourWallet --chain bsc --router okx --version v1
+# → $8,500.00
+
+# Display: Total Cross-Chain Portfolio: $45,845.67
+```
+
+### Safe Assets Only
+
+**User says:** "Show my portfolio value excluding risky tokens on Ethereum"
+
+```bash
+opentrade portfolio total-value --address 0xYourWallet --chain ethereum --exclude-risk --router okx --version v1
+# → Display: Total Portfolio Value (Safe Assets): $23,500.00
+```
+
+### DeFi Positions
+
+**User says:** "How much do I have in DeFi on Ethereum?"
+
+```bash
+opentrade portfolio total-value --address 0xYourWallet --chain ethereum --asset-type 2 --router okx --version v1
+# → Display: DeFi Value: $15,000.00
+```
+
+### Token-Only Value
+
+**User says:** "What's my token balance worth (not DeFi)?"
+
+```bash
+opentrade portfolio total-value --address 0xYourWallet --chain ethereum --asset-type 1 --router okx --version v1
+# → Display: Token Value: $10,000.00
+```
+
+---
 
 ## Edge Cases
 
-- **Invalid address**: returns error — verify address format
-- **Address with no balance**: returns empty array or zero value
-- **Unsupported chain**: returns error — check supported chains
-- **Rate limiting**: too many requests — implement exponential backoff
-- **Stale prices**: prices may be slightly delayed — refresh if needed
-- **Large portfolio**: pagination may be needed for transaction history
+- **Zero balance**: valid state — display `$0.00`, not an error
+- **Unsupported chain**: call `opentrade portfolio chains` first to confirm
+- **`--exclude-risk` not working**: only supported on ETH(`1`)/BSC(`56`)/SOL(`501`)/BASE(`8453`)
+- **DeFi positions**: use `--asset-type 2` to query DeFi holdings separately
+- **Address format mismatch**: EVM address on Solana chain will return empty data — do NOT mix
+- **Network error**: retry once, then prompt user to try again later
+- **Region restriction (error code 50125 or 80001)**: do NOT show the raw error code to the user. Instead, display a friendly message: `⚠️ Service is not available in your region. Please switch to a supported region and try again.`
+- **Max 20 tokens**: `token-balances` supports max 20 token entries in `--tokens` parameter
 
 ## Amount Display Rules
 
@@ -364,34 +491,17 @@ curl -s -H "Authorization: Bearer $OPEN_TOKEN" \
 - Show percentage of total portfolio for each token
 - Highlight tokens with significant value (>1% of portfolio)
 
-## Multi-Chain Portfolio
-
-To check portfolio across multiple chains:
-
-```bash
-# Check Ethereum
-curl -s -H "Authorization: Bearer $OPEN_TOKEN" \
-  "https://ai.6551.io/open/trader/{router}/{version}/portfolio/total-value?address=0x...&chainIndex=1"
-
-# Check BSC
-curl -s -H "Authorization: Bearer $OPEN_TOKEN" \
-  "https://ai.6551.io/open/trader/{router}/{version}/portfolio/total-value?address=0x...&chainIndex=56"
-
-# Check Polygon
-curl -s -H "Authorization: Bearer $OPEN_TOKEN" \
-  "https://ai.6551.io/open/trader/{router}/{version}/portfolio/total-value?address=0x...&chainIndex=137"
-
-# Sum up for total cross-chain portfolio value
-```
-
 ## Global Notes
 
+- `--chain` supports single chain name or chainIndex (e.g., `xlayer` or `196`)
+- `--asset-type`: `0`=all `1`=tokens only `2`=DeFi only (only for `total-value`)
+- `--exclude-risk` only works on ETH(`1`)/BSC(`56`)/SOL(`501`)/BASE(`8453`)
+- `token-balances` supports max **20** token entries
+- The CLI resolves chain names automatically (e.g., `ethereum` → `1`, `solana` → `501`)
+- The CLI handles authentication internally via environment variables — see Pre-flight Checks step 4
 - EVM contract addresses must be **all lowercase**
-- Use `chainIndex` parameter (not `chainId`)
-- Native token (ETH, BNB, etc.) is represented with empty string `""` as token address
+- Native token (ETH, BNB, OKB, etc.) is represented with empty string in token format: `chainIndex:`
 - Balances are returned in minimal units (wei for EVM, lamports for Solana)
 - Values are calculated in USD based on current market prices
-- Transaction history includes both native token and ERC-20 transfers
-- All output is JSON format
 - Get your API token at https://6551.io/mcp
 - Each request consumes 1 quota unit

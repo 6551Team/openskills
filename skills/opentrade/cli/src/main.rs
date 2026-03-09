@@ -1,0 +1,114 @@
+#![allow(dead_code)]
+
+pub mod chains;
+mod client;
+mod commands;
+mod config;
+mod output;
+
+use clap::{Parser, Subcommand, ValueEnum};
+
+#[derive(Parser)]
+#[command(
+    name = "opentrade",
+    version,
+    about = "OpenTrade CLI - interact with OpenTrade API",
+    disable_version_flag = true
+)]
+pub struct Cli {
+    /// Show version information
+    #[arg(short = 'V', long)]
+    pub show_version: bool,
+
+    /// Output format
+    #[arg(short, long, global = true, default_value = "json")]
+    pub output: OutputFormat,
+
+    /// Backend service URL (overrides config)
+    #[arg(long, global = true)]
+    pub base_url: Option<String>,
+
+    /// Chain: ethereum, solana, base, bsc, polygon, arbitrum, sui, etc.
+    #[arg(long, global = true)]
+    pub chain: Option<String>,
+
+    /// Trading router (default: okx)
+    #[arg(long, global = true, default_value = "okx")]
+    pub trader: String,
+
+    /// API version (default: v1)
+    #[arg(long, global = true, default_value = "v1")]
+    pub version: String,
+
+    #[command(subcommand)]
+    pub command: Commands,
+}
+
+#[derive(Clone, Copy, ValueEnum)]
+pub enum OutputFormat {
+    Json,
+    Table,
+}
+
+#[derive(Subcommand)]
+pub enum Commands {
+    /// Market data
+    Market {
+        #[command(subcommand)]
+        command: commands::market::MarketCommand,
+    },
+    /// Token information
+    Token {
+        #[command(subcommand)]
+        command: commands::token::TokenCommand,
+    },
+    /// DEX swap
+    Swap {
+        #[command(subcommand)]
+        command: commands::swap::SwapCommand,
+    },
+    /// Trading operations
+    Trade {
+        #[command(subcommand)]
+        command: commands::trade::TradeCommand,
+    },
+    /// On-chain gateway
+    Gateway {
+        #[command(subcommand)]
+        command: commands::gateway::GatewayCommand,
+    },
+    /// Wallet portfolio and balances
+    Portfolio {
+        #[command(subcommand)]
+        command: commands::portfolio::PortfolioCommand,
+    },
+}
+
+#[tokio::main]
+async fn main() {
+    dotenvy::dotenv().ok();
+
+    let cli = Cli::parse();
+
+    // Handle version flag
+    if cli.show_version {
+        println!("opentrade {}", env!("CARGO_PKG_VERSION"));
+        return;
+    }
+
+    let ctx = commands::Context::new(&cli);
+
+    let result = match cli.command {
+        Commands::Market { command } => commands::market::execute(&ctx, command).await,
+        Commands::Token { command } => commands::token::execute(&ctx, command).await,
+        Commands::Swap { command } => commands::swap::execute(&ctx, command).await,
+        Commands::Trade { command } => commands::trade::execute(&ctx, command).await,
+        Commands::Gateway { command } => commands::gateway::execute(&ctx, command).await,
+        Commands::Portfolio { command } => commands::portfolio::execute(&ctx, command).await,
+    };
+
+    if let Err(e) = result {
+        output::error(&format!("{e:#}"));
+        std::process::exit(1);
+    }
+}

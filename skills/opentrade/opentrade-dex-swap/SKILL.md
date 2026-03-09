@@ -8,31 +8,55 @@ metadata:
   homepage: "https://6551.io"
 ---
 
-# OpenTrade DEX Aggregator Skill
+# OpenTrade DEX Aggregator CLI
 
-5 API endpoints for multi-chain swap aggregation — quote, approve, and execute via HTTP.
+5 commands for multi-chain swap aggregation — quote, approve, and execute.
 
-## Prerequisites
+## Pre-flight Checks
 
-Get your API token at: https://6551.io/mcp
+Every time before running any `opentrade` command, always follow these steps in order. Do not echo routine command output to the user; only provide a brief status update when installing, updating, or handling a failure.
 
-Set environment variable:
-```bash
-export OPEN_TOKEN="your_token_here"
-```
+1. **Confirm installed**: Run `which opentrade`. If not found, install it:
+   ```bash
+   curl -sSL https://raw.githubusercontent.com/6551/openskills/main/install.sh | sh
+   ```
+   If the install script fails, ask the user to install manually following the instructions at: https://github.com/6551/openskills
 
-Or create a config file:
-- macOS/Linux: `~/.config/openskills/credentials.json`
-- Windows: `%APPDATA%\openskills\credentials.json`
+2. **Check for updates**: Read `~/.opentrade/last_check` and compare it with the current timestamp:
+   ```bash
+   cached_ts=$(cat ~/.opentrade/last_check 2>/dev/null || true)
+   now=$(date +%s)
+   ```
+   - If `cached_ts` is non-empty and `(now - cached_ts) < 43200` (12 hours), skip the update and proceed.
+   - Otherwise (file missing or older than 12 hours), run the installer to check for updates:
+     ```bash
+     curl -sSL https://raw.githubusercontent.com/6551/openskills/main/install.sh | sh
+     ```
+     If a newer version is installed, tell the user and suggest updating their opentrade skills from https://github.com/6551/openskills to get the latest features.
+3. If any `opentrade` command fails with an unexpected error during this
+   session, try reinstalling before giving up:
+   ```bash
+   curl -sSL https://raw.githubusercontent.com/6551/openskills/main/install.sh | sh
+   ```
+4. **Authentication**: Get your API token at https://6551.io/mcp
 
-Config file format:
-```json
-{
-  "token": "your-token-here"
-}
-```
+   Set environment variable:
+   ```bash
+   export OPEN_TOKEN="your_token_here"
+   ```
 
-Priority: Environment variable > Config file
+   Or create a config file:
+   - macOS/Linux: `~/.config/openskills/credentials.json`
+   - Windows: `%APPDATA%\openskills\credentials.json`
+
+   Config file format:
+   ```json
+   {
+     "token": "your-token-here"
+   }
+   ```
+
+   Priority: Environment variable > Config file
 
 ## Skill Routing
 
@@ -48,8 +72,7 @@ Priority: Environment variable > Config file
 **IMPORTANT**: If the user has not specified a trading router, you MUST first discover available routers:
 
 ```bash
-curl -s -H "Authorization: Bearer $OPEN_TOKEN" \
-  "https://ai.6551.io/open/trader/routers"
+opentrade trade routers
 ```
 
 **Response format:**
@@ -72,301 +95,487 @@ curl -s -H "Authorization: Bearer $OPEN_TOKEN" \
 
 **Usage:**
 - Extract `router` and `version` from the response
-- Use these values to construct API URLs: `https://ai.6551.io/open/trader/{router}/{version}/...`
-- **Default fallback**: If the API returns no data or is empty, use `router=okx` and `version=v1`
+- Use these values in subsequent commands with `--router` and `--version` flags
+- **Default fallback**: If the API returns no data or is empty, use `--router okx --version v1`
 
 **Example:**
-- If response contains `"router": "okx"` and `"version": "v1"`, use: `https://ai.6551.io/open/trader/okx/v1/swap/quote`
-- If response is empty, use: `https://ai.6551.io/open/trader/okx/v1/swap/quote`
+- If response contains `"router": "okx"` and `"version": "v1"`, use: `opentrade swap quote --router okx --version v1 ...`
+- If response is empty, use: `opentrade swap quote --router okx --version v1 ...`
 
 ### EVM Swap (quote → approve → swap)
 
 ```bash
 # 1. Quote — sell 100 USDC for OKB on XLayer
-curl -s -H "Authorization: Bearer $OPEN_TOKEN" \
-  "https://ai.6551.io/open/trader/{router}/{version}/swap/quote?chainIndex=196&fromTokenAddress=0x74b7f16337b8972027f6196a17a631ac6de26d22&toTokenAddress=0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee&amount=100000000&swapMode=exactIn"
+opentrade swap quote \
+  --router okx \
+  --version v1 \
+  --from 0x74b7f16337b8972027f6196a17a631ac6de26d22 \
+  --to 0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee \
+  --amount 100000000 \
+  --chain xlayer
 # → Expected: X.XX OKB, gas fee, price impact
 
 # 2. Approve — ERC-20 tokens need approval before swap (skip for native OKB)
-curl -s -H "Authorization: Bearer $OPEN_TOKEN" \
-  "https://ai.6551.io/open/trader/{router}/{version}/swap/approve?chainIndex=196&tokenContractAddress=0x74b7f16337b8972027f6196a17a631ac6de26d22&approveAmount=100000000"
+opentrade swap approve \
+  --router okx \
+  --version v1 \
+  --token 0x74b7f16337b8972027f6196a17a631ac6de26d22 \
+  --amount 100000000 \
+  --chain xlayer
 # → Returns approval calldata: sign and broadcast via opentrade-transaction
 
 # 3. Swap
-curl -s -H "Authorization: Bearer $OPEN_TOKEN" \
-  "https://ai.6551.io/open/trader/{router}/{version}/swap/swap?chainIndex=196&fromTokenAddress=0x74b7f16337b8972027f6196a17a631ac6de26d22&toTokenAddress=0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee&amount=100000000&slippagePercent=1&userWalletAddress=0xYourWallet&swapMode=exactIn"
-# → Returns tx data: sign and broadcast via opentrade-transaction
+opentrade swap swap \
+  --router okx \
+  --version v1 \
+  --from 0x74b7f16337b8972027f6196a17a631ac6de26d22 \
+  --to 0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee \
+  --amount 100000000 \
+  --chain xlayer \
+  --wallet 0xYourWallet \
+  --slippage 1
+# → Returns tx data → user signs → broadcast via opentrade-transaction
 ```
 
-### Solana Swap
+### Solana Swap (quote → swap)
 
 ```bash
-curl -s -H "Authorization: Bearer $OPEN_TOKEN" \
-  "https://ai.6551.io/open/trader/{router}/{version}/swap/swap?chainIndex=501&fromTokenAddress=11111111111111111111111111111111&toTokenAddress=DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263&amount=1000000000&slippagePercent=1&userWalletAddress=YourSolanaWallet&swapMode=exactIn"
-# → Returns tx data: sign and broadcast via opentrade-transaction
+# 1. Quote — sell 1 SOL for USDC on Solana
+opentrade swap quote \
+  --router okx \
+  --version v1 \
+  --from 11111111111111111111111111111111 \
+  --to EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v \
+  --amount 1000000000 \
+  --chain solana
+# → Expected: X.XX USDC, gas fee, price impact
+
+# 2. Swap (no approval needed on Solana)
+opentrade swap swap \
+  --router okx \
+  --version v1 \
+  --from 11111111111111111111111111111111 \
+  --to EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v \
+  --amount 1000000000 \
+  --chain solana \
+  --wallet YourSolanaWallet \
+  --slippage 1
+# → Returns tx data → user signs → broadcast via opentrade-transaction
 ```
 
-## Chain Name Support
-
-| Chain | Name | chainIndex |
-|---|---|---|
-| XLayer | `xlayer` | `196` |
-| Solana | `solana` | `501` |
-| Ethereum | `ethereum` | `1` |
-| Base | `base` | `8453` |
-| BSC | `bsc` | `56` |
-| Arbitrum | `arbitrum` | `42161` |
-| Polygon | `polygon` | `137` |
-| Optimism | `optimism` | `10` |
-| Avalanche | `avalanche` | `43114` |
-
-## Native Token Addresses
-
-> **CRITICAL**: Each chain has a specific native token address. Using the wrong address will cause swap transactions to fail.
-
-| Chain | Native Token Address |
-|---|---|
-| EVM (Ethereum, BSC, Polygon, Arbitrum, Base, XLayer, etc.) | `0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee` |
-| Solana | `11111111111111111111111111111111` |
-| Sui | `0x2::sui::SUI` |
-| Tron | `T9yD14Nj9j7xAB4dbGeiX9h8unkKHxuWwb` |
-| Ton | `EQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAM9c` |
-
-> **WARNING — Solana native SOL**: The correct address is `11111111111111111111111111111111` (Solana system program). Do **NOT** use `So11111111111111111111111111111111111111112` (wSOL SPL token) — it is a different token and will cause swap failures.
-
-## API Index
-
-| # | API Name | API Endpoint | Description |
-|---|---|---|---|
-| 1 | Quote | GET `/trader/{router}/{version}/swap/quote` | Get swap quote (read-only price estimate) |
-| 2 | Swap | GET `/trader/{router}/{version}/swap/swap` | Get swap transaction data |
-| 3 | Approve | GET `/trader/{router}/{version}/swap/approve` | Get ERC-20 approval transaction |
-| 4 | Chains | GET `/trader/{router}/{version}/swap/chains` | Get supported chains |
-| 5 | Liquidity | GET `/trader/{router}/{version}/swap/liquidity` | Get available liquidity sources |
-
-## Cross-Skill Workflows
-
-This skill is the **execution endpoint** of most user trading flows. It almost always needs input from other skills first.
-
-### Workflow A: Full Swap by Token Name (most common)
-
-> User: "Swap 1 SOL for BONK on Solana"
-
-```
-1. opentrade-token       search BONK on Solana (keyword=BONK, chains=501)     → get BONK tokenContractAddress
-       ↓ tokenContractAddress
-2. opentrade-dex-swap    Quote API (chainIndex=501, fromTokenAddress=11111111111111111111111111111111,
-                         toTokenAddress=<BONK_address>, amount=1000000000)    → get quote
-       ↓ user confirms
-3. opentrade-dex-swap    Swap API (chainIndex=501, fromTokenAddress=11111111111111111111111111111111,
-                         toTokenAddress=<BONK_address>, amount=1000000000,
-                         slippagePercent=1, userWalletAddress=<addr>)         → get swap calldata
-4. User signs the transaction
-5. opentrade-transaction broadcast transaction (signedTx=<tx>, address=<addr>, chainIndex=501)
-```
-
-**Data handoff**:
-- `tokenContractAddress` from step 1 → `toTokenAddress` in steps 2-3
-- SOL native address = `11111111111111111111111111111111` → `fromTokenAddress`. Do NOT use wSOL address.
-- Amount `1 SOL` = `1000000000` (9 decimals) → `amount` param
-
-### Workflow B: EVM Swap with Approval
-
-> User: "Swap 100 USDC for OKB on XLayer"
-
-```
-1. opentrade-token       search USDC on XLayer (keyword=USDC, chains=196)     → get USDC address
-2. opentrade-dex-swap    Quote API (chainIndex=196, fromTokenAddress=<USDC>,
-                         toTokenAddress=0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee,
-                         amount=100000000)                                    → get quote
-       ↓ check isHoneyPot, taxRate, priceImpactPercent
-3. opentrade-dex-swap    Approve API (chainIndex=196, tokenContractAddress=<USDC>,
-                         approveAmount=100000000)                             → get approval calldata
-4. User signs the approval transaction
-5. opentrade-transaction broadcast approval (signedTx=<tx>, address=<addr>, chainIndex=196)
-6. opentrade-dex-swap    Swap API (chainIndex=196, fromTokenAddress=<USDC>,
-                         toTokenAddress=0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee,
-                         amount=100000000, slippagePercent=1, userWalletAddress=<addr>)
-7. User signs the swap transaction
-8. opentrade-transaction broadcast swap (signedTx=<tx>, address=<addr>, chainIndex=196)
-```
-
-**Key**: EVM tokens (not native OKB) require an **approve** step. Skip it if user is selling native tokens.
-
-### Workflow C: Compare Quote Then Execute
-
-```
-1. Quote API (chainIndex, fromTokenAddress, toTokenAddress, amount)           → get quote with route info
-2. Display to user: expected output, gas, price impact, route
-3. If price impact > 5% → warn user
-4. If isHoneyPot = true → block trade, warn user
-5. User confirms → proceed to approve (if EVM) → swap
-```
-
-## Swap Flow
-
-### EVM Chains (XLayer, Ethereum, BSC, Base, etc.)
-
-```
-1. Quote API                                                                   → Get price and route
-2. Approve API (if needed)                                                     → Get approval calldata
-3. User signs the approval transaction
-4. opentrade-transaction broadcast                                             → Broadcast approval tx
-5. Swap API                                                                    → Get swap calldata
-6. User signs the swap transaction
-7. opentrade-transaction broadcast                                             → Broadcast swap tx
-```
-
-### Solana
-
-```
-1. Quote API                                                                   → Get price and route
-2. Swap API                                                                    → Get swap calldata
-3. User signs the transaction
-4. opentrade-transaction broadcast                                             → Broadcast tx
-```
-
-## Operation Flow
-
-### Step 1: Identify Intent
-
-- Get swap quote → use Quote API
-- Execute swap → use Swap API
-- Approve ERC-20 → use Approve API
-- Check supported chains → use Chains API
-- View liquidity sources → use Liquidity API
-
-### Step 2: Collect Parameters
-
-- Missing chain → recommend XLayer (low gas, fast) as default
-- Missing token address → use `opentrade-token` to search
-- Missing amount → ask user
-- Missing wallet address → ask user (required for swap execution)
-
-### Step 3: Call and Display
-
-- Call API endpoint with parameters
-- Display results with appropriate precision
-- Show USD value alongside token amounts
-
-### Step 4: Suggest Next Steps
-
-After displaying results, suggest relevant follow-up actions:
-
-| Just called | Suggest |
-|---|---|
-| Quote | 1. Execute swap → Swap API 2. Check token details → `opentrade-token` 3. View price chart → `opentrade-market` |
-| Swap | 1. Broadcast transaction → `opentrade-transaction` 2. Track status → `opentrade-transaction` |
-| Approve | 1. Execute swap → Swap API |
-| Chains | 1. Get quote on a chain → Quote API |
-| Liquidity | 1. Get quote → Quote API |
-
-Present conversationally, e.g.: "Swap complete! Would you like to broadcast the transaction?" — never expose skill names or endpoint paths to the user.
-
-## API Reference
-
-### 1. Quote
-
-Get swap quote (read-only price estimate).
+## Command Index
 
 ```bash
-curl -s -H "Authorization: Bearer $OPEN_TOKEN" \
-  "https://ai.6551.io/open/trader/{router}/{version}/swap/quote?chainIndex=<chain>&fromTokenAddress=<from>&toTokenAddress=<to>&amount=<amount>&swapMode=<mode>"
+opentrade trade routers                   # Discover available routers
+opentrade swap quote                      # Get swap quote
+opentrade swap approve                    # Get ERC-20 approval calldata
+opentrade swap swap                       # Get swap transaction data
+opentrade swap liquidity                  # List DEX sources for a chain
+```
+
+## Commands
+
+### 1. Router Discovery
+
+Discover available trading routers before executing swaps.
+
+```bash
+opentrade trade routers
+```
+
+**Response:**
+```json
+{
+  "data": [
+    {
+      "name": "okx test",
+      "router": "okx",
+      "version": "v1",
+      "quota_reward": 0,
+      "is_active": true,
+      "created_at": "2026-03-03 21:24:34",
+      "updated_at": "2026-03-03 21:24:34"
+    }
+  ],
+  "success": true
+}
+```
+
+**Usage:**
+- Always call this first if user hasn't specified a router
+- Use `router` and `version` values in subsequent commands
+- Default to `okx` / `v1` if response is empty
+
+---
+
+### 2. Get Swap Quote
+
+Get a quote for swapping tokens.
+
+```bash
+opentrade swap quote \
+  --router <router> \
+  --version <version> \
+  --from <token_address> \
+  --to <token_address> \
+  --amount <amount_in_minimal_units> \
+  --chain <chain_name> \
+  [--slippage <percent>] \
+  [--mode <exactIn|exactOut>]
 ```
 
 **Parameters:**
-| Param | Required | Default | Description |
-|---|---|---|---|
-| `chainIndex` | Yes | - | Chain ID (e.g., 1 for Ethereum, 501 for Solana) |
-| `fromTokenAddress` | Yes | - | Source token contract address |
-| `toTokenAddress` | Yes | - | Destination token contract address |
-| `amount` | Yes | - | Amount in minimal units (wei/lamports) |
-| `swapMode` | No | `exactIn` | `exactIn` or `exactOut` |
+- `--router`: Router name (from routers command, default: `okx`)
+- `--version`: Router version (from routers command, default: `v1`)
+- `--from`: Source token address (use `0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee` for native tokens on EVM, `11111111111111111111111111111111` for SOL)
+- `--to`: Destination token address
+- `--amount`: Amount in minimal units (wei for EVM, lamports for Solana)
+- `--chain`: Chain name (e.g., `ethereum`, `solana`, `xlayer`, `base`, `bsc`, `arbitrum`, `polygon`)
+- `--slippage`: Slippage tolerance in percent (default: `1`, range: `0.01-50`)
+- `--mode`: Swap mode — `exactIn` (default) or `exactOut` (only on Ethereum/Base/BSC/Arbitrum)
 
-### 2. Swap
+**Example:**
+```bash
+# Quote: Sell 100 USDC for ETH on Ethereum
+opentrade swap quote \
+  --router okx \
+  --version v1 \
+  --from 0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48 \
+  --to 0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee \
+  --amount 100000000 \
+  --chain ethereum \
+  --slippage 1
+```
 
-Get swap transaction data (quote → sign → broadcast).
+**Response:**
+```json
+{
+  "data": {
+    "fromToken": {
+      "address": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+      "symbol": "USDC",
+      "decimals": 6
+    },
+    "toToken": {
+      "address": "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "symbol": "ETH",
+      "decimals": 18
+    },
+    "fromAmount": "100000000",
+    "toAmount": "32145678901234567",
+    "estimatedGas": "150000",
+    "gasFeeInUsd": "5.23",
+    "priceImpact": "0.15",
+    "minReceiveAmount": "31824321890123456",
+    "routes": [
+      {
+        "dex": "Uniswap V3",
+        "percentage": 100
+      }
+    ]
+  },
+  "success": true
+}
+```
+
+**Key Fields:**
+- `toAmount`: Expected output amount in minimal units
+- `estimatedGas`: Gas estimate
+- `gasFeeInUsd`: Gas cost in USD
+- `priceImpact`: Price impact percentage
+- `minReceiveAmount`: Minimum amount after slippage
+- `routes`: DEX routing breakdown
+
+---
+
+### 3. Get Approval Data
+
+Get ERC-20 token approval transaction data (EVM chains only).
 
 ```bash
-curl -s -H "Authorization: Bearer $OPEN_TOKEN" \
-  "https://ai.6551.io/open/trader/{router}/{version}/swap/swap?chainIndex=<chain>&fromTokenAddress=<from>&toTokenAddress=<to>&amount=<amount>&slippagePercent=<slippage>&userWalletAddress=<wallet>&swapMode=<mode>"
+opentrade swap approve \
+  --router <router> \
+  --version <version> \
+  --token <token_address> \
+  --amount <amount_in_minimal_units> \
+  --chain <chain_name>
 ```
 
 **Parameters:**
-| Param | Required | Default | Description |
-|---|---|---|---|
-| `chainIndex` | Yes | - | Chain ID |
-| `fromTokenAddress` | Yes | - | Source token contract address |
-| `toTokenAddress` | Yes | - | Destination token contract address |
-| `amount` | Yes | - | Amount in minimal units |
-| `slippagePercent` | No | `1` | Slippage tolerance (e.g., "1" for 1%) |
-| `userWalletAddress` | Yes | - | User wallet address |
-| `swapMode` | No | `exactIn` | `exactIn` or `exactOut` |
+- `--router`: Router name (from routers command, default: `okx`)
+- `--version`: Router version (from routers command, default: `v1`)
+- `--token`: Token contract address to approve
+- `--amount`: Amount to approve in minimal units (use max uint256 for unlimited)
+- `--chain`: Chain name (e.g., `ethereum`, `xlayer`, `base`, `bsc`, `arbitrum`, `polygon`)
 
-### 3. Approve
+**Example:**
+```bash
+# Approve 100 USDC on Ethereum
+opentrade swap approve \
+  --router okx \
+  --version v1 \
+  --token 0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48 \
+  --amount 100000000 \
+  --chain ethereum
+```
 
-Get ERC-20 approval transaction data.
+**Response:**
+```json
+{
+  "data": {
+    "to": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+    "data": "0x095ea7b3000000000000000000000000...",
+    "value": "0",
+    "gasLimit": "50000"
+  },
+  "success": true
+}
+```
+
+**Next Steps:**
+1. Sign the transaction with user's wallet
+2. Broadcast via `opentrade-transaction`
+3. Wait for confirmation
+4. Proceed with swap
+
+**Note:** Native tokens (ETH, OKB, SOL) do not require approval.
+
+---
+
+### 4. Get Swap Transaction
+
+Get the swap transaction data to execute the trade.
 
 ```bash
-curl -s -H "Authorization: Bearer $OPEN_TOKEN" \
-  "https://ai.6551.io/open/trader/{router}/{version}/swap/approve?chainIndex=<chain>&tokenContractAddress=<token>&approveAmount=<amount>"
+opentrade swap swap \
+  --router <router> \
+  --version <version> \
+  --from <token_address> \
+  --to <token_address> \
+  --amount <amount_in_minimal_units> \
+  --chain <chain_name> \
+  --wallet <user_wallet_address> \
+  [--slippage <percent>] \
+  [--mode <exactIn|exactOut>]
 ```
 
 **Parameters:**
-| Param | Required | Default | Description |
-|---|---|---|---|
-| `chainIndex` | Yes | - | Chain ID |
-| `tokenContractAddress` | Yes | - | Token contract address to approve |
-| `approveAmount` | Yes | - | Approval amount in minimal units |
+- `--router`: Router name (from routers command, default: `okx`)
+- `--version`: Router version (from routers command, default: `v1`)
+- `--from`: Source token address
+- `--to`: Destination token address
+- `--amount`: Amount in minimal units
+- `--chain`: Chain name
+- `--wallet`: User's wallet address
+- `--slippage`: Slippage tolerance in percent (default: `1`)
+- `--mode`: Swap mode — `exactIn` (default) or `exactOut`
 
-### 4. Chains
-
-Get supported chains for DEX aggregator.
-
+**Example:**
 ```bash
-curl -s -H "Authorization: Bearer $OPEN_TOKEN" \
-  "https://ai.6551.io/open/trader/{router}/{version}/swap/chains"
+# Swap 100 USDC for ETH on Ethereum
+opentrade swap swap \
+  --router okx \
+  --version v1 \
+  --from 0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48 \
+  --to 0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee \
+  --amount 100000000 \
+  --chain ethereum \
+  --wallet 0xYourWalletAddress \
+  --slippage 1
 ```
 
-No parameters required.
+**Response (EVM):**
+```json
+{
+  "data": {
+    "to": "0x1111111254eeb25477b68fb85ed929f73a960582",
+    "data": "0x12aa3caf000000000000000000000000...",
+    "value": "0",
+    "gasLimit": "200000"
+  },
+  "success": true
+}
+```
 
-### 5. Liquidity
+**Response (Solana):**
+```json
+{
+  "data": {
+    "transaction": "base64_encoded_transaction_data",
+    "signers": ["wallet_address"]
+  },
+  "success": true
+}
+```
 
-Get available liquidity sources on a chain.
+**Next Steps:**
+1. Sign the transaction with user's wallet
+2. Broadcast via `opentrade-transaction`
+3. Track transaction status
+
+---
+
+### 5. Get Liquidity Sources
+
+List available DEX sources for a specific chain.
 
 ```bash
-curl -s -H "Authorization: Bearer $OPEN_TOKEN" \
-  "https://ai.6551.io/open/trader/{router}/{version}/swap/liquidity?chainIndex=<chain>"
+opentrade swap liquidity \
+  --router <router> \
+  --version <version> \
+  --chain <chain_name>
 ```
 
 **Parameters:**
-| Param | Required | Default | Description |
-|---|---|---|---|
-| `chainIndex` | Yes | - | Chain ID |
+- `--router`: Router name (from routers command, default: `okx`)
+- `--version`: Router version (from routers command, default: `v1`)
+- `--chain`: Chain name (e.g., `ethereum`, `solana`, `xlayer`, `base`)
 
-## Input / Output Examples
+**Example:**
+```bash
+# Get DEX sources on XLayer
+opentrade swap liquidity \
+  --router okx \
+  --version v1 \
+  --chain xlayer
+```
+
+**Response:**
+```json
+{
+  "data": {
+    "dexList": [
+      {
+        "name": "XLayer DEX",
+        "protocol": "uniswap-v2"
+      },
+      {
+        "name": "CurveNG",
+        "protocol": "curve"
+      },
+      {
+        "name": "Merchant Moe",
+        "protocol": "trader-joe"
+      }
+    ]
+  },
+  "success": true
+}
+```
+
+---
+
+## Supported Chains
+
+| Chain | Name | Native Token Address (EVM) |
+|-------|------|----------------------------|
+| Ethereum | `ethereum` | `0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee` |
+| XLayer | `xlayer` | `0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee` |
+| Base | `base` | `0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee` |
+| BSC | `bsc` | `0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee` |
+| Arbitrum | `arbitrum` | `0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee` |
+| Polygon | `polygon` | `0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee` |
+| Optimism | `optimism` | `0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee` |
+| Avalanche | `avalanche` | `0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee` |
+| Solana | `solana` | `11111111111111111111111111111111` |
+
+**Note:** For Solana native SOL, use `11111111111111111111111111111111` (system program), NOT `So11111111111111111111111111111111111111112` (wSOL).
+
+---
+
+## Workflow Examples
+
+### Complete EVM Swap Flow
 
 **User says:** "Swap 100 USDC for ETH on Ethereum"
 
 ```bash
-# 1. Get quote
-curl -s -H "Authorization: Bearer $OPEN_TOKEN" \
-  "https://ai.6551.io/open/trader/{router}/{version}/swap/quote?chainIndex=1&fromTokenAddress=0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48&toTokenAddress=0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2&amount=100000000&swapMode=exactIn"
+# Step 1: Discover router (if not already known)
+opentrade trade routers
+# → Use router=okx, version=v1
 
-# 2. Get approval
-curl -s -H "Authorization: Bearer $OPEN_TOKEN" \
-  "https://ai.6551.io/open/trader/{router}/{version}/swap/approve?chainIndex=1&tokenContractAddress=0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48&approveAmount=100000000"
+# Step 2: Get quote
+opentrade swap quote \
+  --router okx \
+  --version v1 \
+  --from 0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48 \
+  --to 0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee \
+  --amount 100000000 \
+  --chain ethereum \
+  --slippage 1
+# → Display: "You'll receive ~0.032 ETH, gas fee: $5.23, price impact: 0.15%"
 
-# 3. Get swap transaction
-curl -s -H "Authorization: Bearer $OPEN_TOKEN" \
-  "https://ai.6551.io/open/trader/{router}/{version}/swap/swap?chainIndex=1&fromTokenAddress=0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48&toTokenAddress=0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2&amount=100000000&slippagePercent=1&userWalletAddress=0x...&swapMode=exactIn"
+# Step 3: Check if approval needed (skip for native tokens)
+opentrade swap approve \
+  --router okx \
+  --version v1 \
+  --token 0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48 \
+  --amount 100000000 \
+  --chain ethereum
+# → Returns approval tx → user signs → broadcast via opentrade-transaction
+
+# Step 4: Execute swap
+opentrade swap swap \
+  --router okx \
+  --version v1 \
+  --from 0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48 \
+  --to 0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee \
+  --amount 100000000 \
+  --chain ethereum \
+  --wallet 0xYourWallet \
+  --slippage 1
+# → Returns tx data → user signs → broadcast via opentrade-transaction
 ```
+
+### Complete Solana Swap Flow
+
+**User says:** "Swap 1 SOL for USDC on Solana"
+
+```bash
+# Step 1: Discover router
+opentrade trade routers
+# → Use router=okx, version=v1
+
+# Step 2: Get quote
+opentrade swap quote \
+  --router okx \
+  --version v1 \
+  --from 11111111111111111111111111111111 \
+  --to EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v \
+  --amount 1000000000 \
+  --chain solana \
+  --slippage 1
+# → Display: "You'll receive ~180 USDC, gas fee: $0.0001, price impact: 0.05%"
+
+# Step 3: Execute swap (no approval needed on Solana)
+opentrade swap swap \
+  --router okx \
+  --version v1 \
+  --from 11111111111111111111111111111111 \
+  --to EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v \
+  --amount 1000000000 \
+  --chain solana \
+  --wallet YourSolanaWallet \
+  --slippage 1
+# → Returns tx data → user signs → broadcast via opentrade-transaction
+```
+
+### Check Available DEXes
+
+**User says:** "What DEXes are available on XLayer?"
+
+```bash
+opentrade swap liquidity \
+  --router okx \
+  --version v1 \
+  --chain xlayer
+# → Display: CurveNG, XLayer DEX, ... (DEX sources on XLayer)
+```
+
+---
 
 ## Edge Cases
 
-- **Invalid token address**: returns error — prompt user to verify or use `opentrade-token` to search
-- **Unsupported chain**: returns error — try a different chain
-- **Insufficient liquidity**: quote may show high price impact — warn user
 - **High slippage (>5%)**: warn user, suggest splitting the trade or adjusting slippage
 - **Large price impact (>10%)**: strongly warn, suggest reducing amount
 - **Honeypot token**: `isHoneyPot = true` — block trade and warn user
@@ -377,11 +586,17 @@ curl -s -H "Authorization: Bearer $OPEN_TOKEN" \
 - **Network error**: retry once, then prompt user to try again later
 - **Region restriction (error code 50125 or 80001)**: do NOT show the raw error code to the user. Instead, display a friendly message: `⚠️ Service is not available in your region. Please switch to a supported region and try again.`
 
+---
+
 ## Amount Display Rules
 
-- Always display in UI units (`1.5 ETH`), never base units
-- Show USD value alongside (`1.5 ETH ≈ $4,500`)
-- Amounts are in minimal units for API calls (wei for EVM, lamports for Solana)
+- Input/output amounts in UI units (`1.5 ETH`, `3,200 USDC`)
+- Internal CLI params use minimal units (`1 USDC` = `"1000000"`, `1 ETH` = `"1000000000000000000"`)
+- Gas fees in USD
+- `minReceiveAmount` in both UI units and USD
+- Price impact as percentage
+
+---
 
 ## Global Notes
 
@@ -389,8 +604,8 @@ curl -s -H "Authorization: Bearer $OPEN_TOKEN" \
 - `exactOut` only on Ethereum(`1`)/Base(`8453`)/BSC(`56`)/Arbitrum(`42161`)
 - Check `isHoneyPot` and `taxRate` — surface safety info to users
 - EVM contract addresses must be **all lowercase**
-- Use `chainIndex` parameter (not `chainId`)
-- All output is JSON format
+- The CLI resolves chain names automatically (e.g., `ethereum` → `1`, `solana` → `501`)
+- The CLI handles authentication internally via environment variables or config file
 - Get your API token at https://6551.io/mcp
 - Each request consumes 1 quota unit
 - Base URL: `https://ai.6551.io/open`

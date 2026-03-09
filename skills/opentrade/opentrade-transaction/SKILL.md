@@ -1,6 +1,6 @@
 ---
 name: opentrade-transaction
-description: "This skill should be used when the user asks to 'broadcast transaction', 'send tx', 'estimate gas', 'simulate transaction', 'check tx status', 'track my transaction', 'get gas price', 'gas limit', 'broadcast signed tx', or mentions broadcasting transactions, sending transactions on-chain, gas estimation, transaction simulation, tracking broadcast orders, or checking transaction status. Covers gas price, gas limit estimation, transaction simulation, transaction broadcasting, and order tracking across XLayer, Solana, Ethereum, Base, BSC, Arbitrum, Polygon, and 20+ other chains. Do NOT use for swap quote or execution — use okx-dex-swap instead. Do NOT use for general programming questions about transaction handling."
+description: "This skill should be used when the user asks to 'broadcast transaction', 'send tx', 'estimate gas', 'simulate transaction', 'check tx status', 'track my transaction', 'get gas price', 'gas limit', 'broadcast signed tx', or mentions broadcasting transactions, sending transactions on-chain, gas estimation, transaction simulation, tracking broadcast orders, or checking transaction status. Covers gas price, gas limit estimation, transaction simulation, transaction broadcasting, and order tracking across XLayer, Solana, Ethereum, Base, BSC, Arbitrum, Polygon, and 20+ other chains. Do NOT use for swap quote or execution — use opentrade-dex-swap instead. Do NOT use for general programming questions about transaction handling."
 license: Apache-2.0
 metadata:
   author: 6551
@@ -8,31 +8,41 @@ metadata:
   homepage: "https://6551.io"
 ---
 
-# OpenTrade Onchain Gateway Skill
+# OpenTrade Onchain Gateway CLI
 
-6 API endpoints for gas estimation, transaction simulation, broadcasting, and order tracking via HTTP.
+6 commands for gas estimation, transaction simulation, broadcasting, and order tracking.
 
-## Prerequisites
+## Pre-flight Checks
 
-Get your API token at: https://6551.io/mcp
+Every time before running any `opentrade` command, always follow these steps in order. Do not echo routine command output to the user; only provide a brief status update when installing, updating, or handling a failure.
 
-Set environment variable:
-```bash
-export OPEN_TOKEN="your_token_here"
-```
+1. **Confirm installed**: Run `which opentrade`. If not found, install it:
+   ```bash
+   curl -sSL https://raw.githubusercontent.com/6551/openskills/main/install.sh | sh
+   ```
+   If the install script fails, ask the user to install manually following the instructions at: https://github.com/6551/openskills
 
-Or create a config file:
-- macOS/Linux: `~/.config/openskills/credentials.json`
-- Windows: `%APPDATA%\openskills\credentials.json`
-
-Config file format:
-```json
-{
-  "token": "your-token-here"
-}
-```
-
-Priority: Environment variable > Config file
+2. **Check for updates**: Read `~/.opentrade/last_check` and compare it with the current timestamp:
+   ```bash
+   cached_ts=$(cat ~/.opentrade/last_check 2>/dev/null || true)
+   now=$(date +%s)
+   ```
+   - If `cached_ts` is non-empty and `(now - cached_ts) < 43200` (12 hours), skip the update and proceed.
+   - Otherwise (file missing or older than 12 hours), run the installer to check for updates:
+     ```bash
+     curl -sSL https://raw.githubusercontent.com/6551/openskills/main/install.sh | sh
+     ```
+     If a newer version is installed, tell the user and suggest updating their opentrade skills from https://github.com/6551/openskills to get the latest features.
+3. If any `opentrade` command fails with an unexpected error during this
+   session, try reinstalling before giving up:
+   ```bash
+   curl -sSL https://raw.githubusercontent.com/6551/openskills/main/install.sh | sh
+   ```
+4. Create a `.env` file in the project root to override the default API credentials (optional — skip this for quick start):
+   ```
+   OPEN_TOKEN=your_token_here
+   ```
+   Get your API token at: https://6551.io/mcp
 
 ## Skill Routing
 
@@ -49,8 +59,7 @@ Priority: Environment variable > Config file
 **IMPORTANT**: If the user has not specified a trading router, you MUST first discover available routers:
 
 ```bash
-curl -s -H "Authorization: Bearer $OPEN_TOKEN" \
-  "https://ai.6551.io/open/trader/routers"
+opentrade trade routers
 ```
 
 **Response format:**
@@ -73,339 +82,508 @@ curl -s -H "Authorization: Bearer $OPEN_TOKEN" \
 
 **Usage:**
 - Extract `router` and `version` from the response
-- Use these values to construct API URLs: `https://ai.6551.io/open/trader/{router}/{version}/...`
+- Use these values in subsequent commands with `--router` and `--version` flags
 - **Default fallback**: If the API returns no data or is empty, use `router=okx` and `version=v1`
 
-**Example:**
-- If response contains `"router": "okx"` and `"version": "v1"`, use: `https://ai.6551.io/open/trader/okx/v1/transaction/gas-price`
-- If response is empty, use: `https://ai.6551.io/open/trader/okx/v1/transaction/gas-price`
+### Basic Commands
 
 ```bash
 # Get current gas price on XLayer
-curl -s -H "Authorization: Bearer $OPEN_TOKEN" \
-  "https://ai.6551.io/open/trader/{router}/{version}/gateway/gas?chainIndex=196"
+opentrade gateway gas --chain xlayer --router okx --version v1
 
 # Estimate gas limit for a transaction
-curl -s -X POST -H "Authorization: Bearer $OPEN_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"chainIndex":"196","fromAddress":"0xYourWallet","toAddress":"0xRecipient","txAmount":"0"}' \
-  "https://ai.6551.io/open/trader/{router}/{version}/gateway/gas-limit"
+opentrade gateway gas-limit --from 0xYourWallet --to 0xRecipient --chain xlayer --router okx --version v1
 
 # Simulate a transaction (dry-run)
-curl -s -X POST -H "Authorization: Bearer $OPEN_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"chainIndex":"196","fromAddress":"0xYourWallet","toAddress":"0xContract","txAmount":"0","extJson":{"inputData":"0x..."}}' \
-  "https://ai.6551.io/open/trader/{router}/{version}/gateway/simulate"
+opentrade gateway simulate --from 0xYourWallet --to 0xContract --data 0x... --chain xlayer --router okx --version v1
 
 # Broadcast a signed transaction
-curl -s -X POST -H "Authorization: Bearer $OPEN_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"signedTx":"0xf86c...signed","chainIndex":"196","address":"0xYourWallet"}' \
-  "https://ai.6551.io/open/trader/{router}/{version}/gateway/broadcast"
+opentrade gateway broadcast --signed-tx 0xf86c...signed --address 0xYourWallet --chain xlayer --router okx --version v1
 
 # Track order status
-curl -s -H "Authorization: Bearer $OPEN_TOKEN" \
-  "https://ai.6551.io/open/trader/{router}/{version}/gateway/orders?address=0xYourWallet&chainIndex=196&orderId=123456789"
+opentrade gateway orders --address 0xYourWallet --chain xlayer --order-id 123456789 --router okx --version v1
 ```
 
 ## Chain Name Support
 
+The CLI accepts human-readable chain names and resolves them automatically.
+
 | Chain | Name | chainIndex |
 |---|---|---|
-| XLayer | `xlayer` | `196` |
-| Solana | `solana` | `501` |
-| Ethereum | `ethereum` | `1` |
-| Base | `base` | `8453` |
-| BSC | `bsc` | `56` |
-| Arbitrum | `arbitrum` | `42161` |
-| Polygon | `polygon` | `137` |
-| Optimism | `optimism` | `10` |
-| Avalanche | `avalanche` | `43114` |
+| XLayer | `xlayer` | 196 |
+| Ethereum | `ethereum` | 1 |
+| Solana | `solana` | 501 |
+| Base | `base` | 8453 |
+| BSC | `bsc` | 56 |
+| Arbitrum | `arbitrum` | 42161 |
+| Polygon | `polygon` | 137 |
+| Optimism | `optimism` | 10 |
+| Avalanche | `avalanche` | 43114 |
+| Fantom | `fantom` | 250 |
+| zkSync Era | `zksync` | 324 |
+| Linea | `linea` | 59144 |
+| Scroll | `scroll` | 534352 |
+| Manta | `manta` | 169 |
+| Mantle | `mantle` | 5000 |
+| Blast | `blast` | 81457 |
+| Merlin | `merlin` | 4200 |
+| Mode | `mode` | 34443 |
+| Berachain | `berachain` | 80084 |
+| Taiko | `taiko` | 167000 |
+| Zircuit | `zircuit` | 48900 |
+| Ink | `ink` | 57073 |
+| Corn | `corn` | 21000000 |
+| Sonic | `sonic` | 146 |
 
-## API Index
+Use the chain name in the `--chain` flag (e.g., `--chain xlayer`).
 
-| # | API Name | API Endpoint | Description |
-|---|---|---|---|
-| 1 | Chains | GET `/trader/{router}/{version}/gateway/chains` | Get supported chains for gateway |
-| 2 | Gas | GET `/trader/{router}/{version}/gateway/gas` | Get current gas prices for a chain |
-| 3 | GasLimit | POST `/trader/{router}/{version}/gateway/gas-limit` | Estimate gas limit for a transaction |
-| 4 | Simulate | POST `/trader/{router}/{version}/gateway/simulate` | Simulate a transaction (dry-run) |
-| 5 | Broadcast | POST `/trader/{router}/{version}/gateway/broadcast` | Broadcast a signed transaction |
-| 6 | Orders | GET `/trader/{router}/{version}/gateway/orders` | Track broadcast order status |
+## Command Index
 
-## Cross-Skill Workflows
-
-This skill is the **final mile** — it takes a signed transaction and sends it on-chain. It pairs with swap (to get tx data).
-
-### Workflow A: Swap → Broadcast → Track
-
-> User: "Swap 1 ETH for USDC and broadcast it"
-
-```
-1. opentrade-dex-swap      → get swap transaction data
-       ↓ user signs the tx locally
-2. opentrade-transaction   → broadcast signed transaction
-       ↓ orderId returned
-3. opentrade-transaction   → track order status
-```
-
-**Data handoff**:
-- `tx.data`, `tx.to`, `tx.value`, `tx.gas` from swap → user builds & signs → `signedTx` for broadcast
-- `orderId` from broadcast → `orderId` param in orders query
-
-### Workflow B: Simulate → Broadcast → Track
-
-> User: "Simulate this transaction first, then broadcast if safe"
-
-```
-1. opentrade-transaction   → simulate transaction
-       ↓ simulation passes (no revert)
-2. opentrade-transaction   → broadcast signed transaction
-3. opentrade-transaction   → track order status
-```
-
-### Workflow C: Gas Check → Swap → Broadcast
-
-> User: "Check gas, swap for USDC, then send it"
-
-```
-1. opentrade-transaction   → get gas price
-2. opentrade-dex-swap      → get swap transaction
-       ↓ user signs
-3. opentrade-transaction   → broadcast signed transaction
-4. opentrade-transaction   → track order status
-```
-
-## Operation Flow
-
-### Step 1: Identify Intent
-
-- Estimate gas for a chain → Gas command
-- Estimate gas limit for a specific tx → GasLimit command
-- Test if a tx will succeed → Simulate command
-- Broadcast a signed tx → Broadcast command
-- Track a broadcast order → Orders command
-- Check supported chains → Chains command
-
-### Step 2: Collect Parameters
-
-- Missing chain → recommend XLayer (low gas, fast confirmation) as default, then ask which chain the user prefers
-- Missing `signedTx` → remind user to sign the transaction first (this API does NOT sign)
-- Missing wallet address → ask user
-- For gas-limit / simulate → need `fromAddress`, `toAddress`, optionally `extJson.inputData` (calldata)
-- For orders query → need `address` and `chainIndex`, optionally `orderId`
-
-### Step 3: Call and Display
-
-- Call API endpoint with parameters
-- Display results with appropriate formatting
-- For gas prices: show in Gwei for readability
-- For simulation: clearly indicate success or failure
-
-### Step 4: Suggest Next Steps
-
-After displaying results, suggest relevant follow-up actions:
-
-| Just called | Suggest |
+| Command | Description |
 |---|---|
-| Chains | 1. Check gas price → Gas 2. Get swap quote → `opentrade-dex-swap` |
-| Gas | 1. Estimate gas limit → GasLimit 2. Execute swap → `opentrade-dex-swap` |
-| GasLimit | 1. Simulate transaction → Simulate 2. Broadcast → Broadcast |
-| Simulate | 1. Broadcast if successful → Broadcast 2. Adjust parameters if failed |
-| Broadcast | 1. Track order status → Orders |
-| Orders | 1. Check again if pending 2. View transaction on explorer |
+| `opentrade trade routers` | Discover available trading routers |
+| `opentrade gateway gas` | Get current gas price |
+| `opentrade gateway gas-limit` | Estimate gas limit for a transaction |
+| `opentrade gateway simulate` | Simulate transaction execution (dry-run) |
+| `opentrade gateway broadcast` | Broadcast a signed transaction |
+| `opentrade gateway orders` | Query order status by order ID |
 
-Present conversationally, e.g.: "Transaction broadcast! Would you like to track its status?" — never expose skill names or endpoint paths to the user.
+---
 
-## API Reference
+## 1. Router Discovery
 
-### 1. Chains
-
-Get supported chains for gateway.
+Discover available trading routers for the authenticated user.
 
 ```bash
-curl -s -H "Authorization: Bearer $OPEN_TOKEN" \
-  "https://ai.6551.io/open/trader/{router}/{version}/gateway/chains"
+opentrade trade routers
 ```
 
-No parameters required.
-
-**Response fields:**
-- `chainIndex`: Chain identifier
-- `chainName`: Human-readable chain name
-- `chainLogo`: Chain logo URL
-
-### 2. Gas
-
-Get current gas prices for a chain.
-
-```bash
-curl -s -H "Authorization: Bearer $OPEN_TOKEN" \
-  "https://ai.6551.io/open/trader/{router}/{version}/gateway/gas?chainIndex=<chain>"
+**Output:**
+```json
+{
+  "data": [
+    {
+      "name": "okx test",
+      "router": "okx",
+      "version": "v1",
+      "quota_reward": 0,
+      "is_active": true,
+      "created_at": "2026-03-03 21:24:34",
+      "updated_at": "2026-03-03 21:24:34"
+    }
+  ],
+  "success": true
+}
 ```
 
-**Parameters:**
-| Param | Required | Description |
-|---|---|---|
-| `chainIndex` | Yes | Chain ID (e.g., 1 for Ethereum) |
+**Usage:**
+- Use `router` and `version` values in subsequent commands
+- If no routers are returned, use default: `router=okx`, `version=v1`
 
-**Response fields:**
-- `gasPrice`: Standard gas price (wei)
-- `maxFeePerGas`: Maximum fee per gas (EIP-1559)
-- `maxPriorityFeePerGas`: Maximum priority fee per gas (EIP-1559)
+---
 
-### 3. GasLimit
+## 2. Gas Price
 
-Estimate gas limit for a transaction.
+Get current gas price for a specific chain.
 
 ```bash
-curl -s -X POST -H "Authorization: Bearer $OPEN_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"chainIndex":"<chain>","fromAddress":"<from>","toAddress":"<to>","txAmount":"<amount>","extJson":{"inputData":"<data>"}}' \
-  "https://ai.6551.io/open/trader/{router}/{version}/gateway/gas-limit"
-```
-
-**Request body:**
-| Field | Required | Description |
-|---|---|---|
-| `chainIndex` | Yes | Chain ID |
-| `fromAddress` | Yes | Sender address |
-| `toAddress` | Yes | Recipient/contract address |
-| `txAmount` | Yes | Transfer value in minimal units (default "0") |
-| `extJson.inputData` | No | Encoded calldata (hex, for contract interactions) |
-
-**Response fields:**
-- `gasLimit`: Estimated gas limit
-
-### 4. Simulate
-
-Simulate a transaction (dry-run).
-
-```bash
-curl -s -X POST -H "Authorization: Bearer $OPEN_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"chainIndex":"<chain>","fromAddress":"<from>","toAddress":"<to>","txAmount":"<amount>","extJson":{"inputData":"<data>"}}' \
-  "https://ai.6551.io/open/trader/{router}/{version}/gateway/simulate"
-```
-
-**Request body:**
-| Field | Required | Description |
-|---|---|---|
-| `chainIndex` | Yes | Chain ID |
-| `fromAddress` | Yes | Sender address |
-| `toAddress` | Yes | Recipient/contract address |
-| `txAmount` | Yes | Transfer value in minimal units |
-| `extJson.inputData` | Yes | Encoded calldata (hex) |
-
-**Response fields:**
-- `success`: Whether simulation succeeded
-- `gasUsed`: Estimated gas used
-- `returnData`: Return data from simulation
-- `error`: Error message if simulation failed
-
-### 5. Broadcast
-
-Broadcast a signed transaction.
-
-```bash
-curl -s -X POST -H "Authorization: Bearer $OPEN_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"signedTx":"<signed_tx>","chainIndex":"<chain>","address":"<address>"}' \
-  "https://ai.6551.io/open/trader/{router}/{version}/gateway/broadcast"
-```
-
-**Request body:**
-| Field | Required | Description |
-|---|---|---|
-| `signedTx` | Yes | Fully signed transaction (hex for EVM, base58 for Solana) |
-| `chainIndex` | Yes | Chain ID |
-| `address` | Yes | Sender wallet address |
-
-**Response fields:**
-- `orderId`: Order ID for tracking
-- `txHash`: Transaction hash (if immediately available)
-
-### 6. Orders
-
-Track broadcast order status.
-
-```bash
-# Get all orders for an address
-curl -s -H "Authorization: Bearer $OPEN_TOKEN" \
-  "https://ai.6551.io/open/trader/{router}/{version}/gateway/orders?address=<address>&chainIndex=<chain>"
-
-# Get specific order by ID
-curl -s -H "Authorization: Bearer $OPEN_TOKEN" \
-  "https://ai.6551.io/open/trader/{router}/{version}/gateway/orders?address=<address>&chainIndex=<chain>&orderId=<order_id>"
+opentrade gateway gas --chain <chain_name> --router <router> --version <version>
 ```
 
 **Parameters:**
-| Param | Required | Description |
-|---|---|---|
-| `address` | Yes | Wallet address |
-| `chainIndex` | Yes | Chain ID |
-| `orderId` | No | Specific order ID (from broadcast response) |
+- `--chain`: Chain name (e.g., `xlayer`, `ethereum`, `solana`)
+- `--router`: Router name from router discovery (default: `okx`)
+- `--version`: Router version from router discovery (default: `v1`)
 
-**Response fields:**
-- `orderId`: Order identifier
-- `txHash`: Transaction hash
-- `status`: Order status (pending, confirmed, failed)
-- `blockNumber`: Block number (if confirmed)
-- `timestamp`: Timestamp
-
-## Input / Output Examples
-
-**User says:** "Get gas price on Ethereum"
-
+**Example:**
 ```bash
-curl -s -H "Authorization: Bearer $OPEN_TOKEN" \
-  "https://ai.6551.io/open/trader/{router}/{version}/gateway/gas?chainIndex=1"
-# → Display: Gas price: 30 Gwei, Max fee: 35 Gwei
+opentrade gateway gas --chain xlayer --router okx --version v1
 ```
 
-**User says:** "Broadcast this signed transaction on XLayer"
+**Output:**
+```json
+{
+  "code": "0",
+  "data": [
+    {
+      "chainId": "196",
+      "normal": {
+        "maxFeePerGas": "100000000",
+        "baseFee": "100000000",
+        "gasPrice": "100000000",
+        "priorityFeePerGas": "0"
+      },
+      "fast": {
+        "maxFeePerGas": "100000000",
+        "baseFee": "100000000",
+        "gasPrice": "100000000",
+        "priorityFeePerGas": "0"
+      },
+      "slow": {
+        "maxFeePerGas": "100000000",
+        "baseFee": "100000000",
+        "gasPrice": "100000000",
+        "priorityFeePerGas": "0"
+      }
+    }
+  ],
+  "msg": ""
+}
+```
+
+**Display to user:**
+- Convert wei to Gwei: `100000000 wei = 0.1 Gwei`
+- Show all three speeds: slow, normal, fast
+- Recommend "normal" for most transactions
+
+---
+
+## 3. Gas Limit Estimation
+
+Estimate the gas limit required for a transaction.
 
 ```bash
-curl -s -X POST -H "Authorization: Bearer $OPEN_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"signedTx":"0xf86c...","chainIndex":"196","address":"0x..."}' \
-  "https://ai.6551.io/open/trader/{router}/{version}/gateway/broadcast"
+opentrade gateway gas-limit \
+  --from <sender_address> \
+  --to <recipient_address> \
+  --chain <chain_name> \
+  --router <router> \
+  --version <version> \
+  [--value <amount_in_wei>] \
+  [--data <hex_data>]
+```
+
+**Parameters:**
+- `--from`: Sender wallet address (required)
+- `--to`: Recipient address (required)
+- `--chain`: Chain name (required)
+- `--router`: Router name (default: `okx`)
+- `--version`: Router version (default: `v1`)
+- `--value`: Amount to send in wei (optional, default: `0`)
+- `--data`: Transaction data in hex format (optional, default: `0x`)
+
+**Example:**
+```bash
+opentrade gateway gas-limit \
+  --from 0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb \
+  --to 0x1234567890abcdef1234567890abcdef12345678 \
+  --chain xlayer \
+  --router okx \
+  --version v1 \
+  --value 1000000000000000000
+```
+
+**Output:**
+```json
+{
+  "code": "0",
+  "data": [
+    {
+      "gasLimit": "21000"
+    }
+  ],
+  "msg": ""
+}
+```
+
+**Display to user:**
+- Show gas limit as integer: `21000`
+- Estimate total gas cost: `gasLimit × gasPrice`
+- Show USD equivalent if possible
+
+---
+
+## 4. Transaction Simulation
+
+Simulate a transaction before broadcasting (dry-run).
+
+```bash
+opentrade gateway simulate \
+  --from <sender_address> \
+  --to <recipient_address> \
+  --chain <chain_name> \
+  --router <router> \
+  --version <version> \
+  [--value <amount_in_wei>] \
+  [--data <hex_data>] \
+  [--gas-limit <limit>] \
+  [--gas-price <price_in_wei>]
+```
+
+**Parameters:**
+- `--from`: Sender wallet address (required)
+- `--to`: Recipient address (required)
+- `--chain`: Chain name (required)
+- `--router`: Router name (default: `okx`)
+- `--version`: Router version (default: `v1`)
+- `--value`: Amount to send in wei (optional, default: `0`)
+- `--data`: Transaction data in hex format (optional, default: `0x`)
+- `--gas-limit`: Gas limit (optional)
+- `--gas-price`: Gas price in wei (optional)
+
+**Example:**
+```bash
+opentrade gateway simulate \
+  --from 0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb \
+  --to 0x1234567890abcdef1234567890abcdef12345678 \
+  --chain xlayer \
+  --router okx \
+  --version v1 \
+  --value 1000000000000000000 \
+  --gas-limit 21000 \
+  --gas-price 100000000
+```
+
+**Output (Success):**
+```json
+{
+  "code": "0",
+  "data": [
+    {
+      "executionResult": {
+        "used": 21000,
+        "success": true,
+        "gasLimit": 21000,
+        "gasUsed": 21000
+      }
+    }
+  ],
+  "msg": ""
+}
+```
+
+**Output (Failure):**
+```json
+{
+  "code": "0",
+  "data": [
+    {
+      "executionResult": {
+        "used": 0,
+        "success": false,
+        "error": "execution reverted: insufficient balance"
+      }
+    }
+  ],
+  "msg": ""
+}
+```
+
+**Display to user:**
+- If `success: true`: "Simulation successful! Gas used: 21000"
+- If `success: false`: "Simulation failed: [error message]"
+- Show revert reason if available
+
+---
+
+## 5. Broadcast Transaction
+
+Broadcast a signed transaction to the blockchain.
+
+```bash
+opentrade gateway broadcast \
+  --signed-tx <signed_transaction_hex> \
+  --address <sender_address> \
+  --chain <chain_name> \
+  --router <router> \
+  --version <version>
+```
+
+**Parameters:**
+- `--signed-tx`: Signed transaction in hex format (EVM) or base58 (Solana) (required)
+- `--address`: Sender wallet address (required)
+- `--chain`: Chain name (required)
+- `--router`: Router name (default: `okx`)
+- `--version`: Router version (default: `v1`)
+
+**Example (EVM):**
+```bash
+opentrade gateway broadcast \
+  --signed-tx 0xf86c808504a817c800825208941234567890abcdef1234567890abcdef12345678880de0b6b3a764000080820a96a0... \
+  --address 0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb \
+  --chain xlayer \
+  --router okx \
+  --version v1
+```
+
+**Example (Solana):**
+```bash
+opentrade gateway broadcast \
+  --signed-tx 4hXTCkRzt9WyecNzV1XPgCDfGAZzQKNxLXgynz5QDuWWPSAZBZSHptvWRL3BjCvzUXRdKvHL2b7yGrRQcWyaqsaBCncVG7BFggS8w9snUts67BSh3EqKpXLUm5UMHfD7ZBe9GhARjbNQMLJ1QD3Spr6oMTBU6EhdB4RD8CP2xUxr2u3d6fos36PD98XS6oX8TQjLpsMwncs5DAMiD4nNnR8NBfyghGCWvCVifVwvA8B8TJxE1aHwYbgByseGmZJYDUSi5McBJdm7f9YY9d8FU7XMWoLM1gCWmoL92aPQuGHafb \
+  --address YourSolanaWalletAddress \
+  --chain solana \
+  --router okx \
+  --version v1
+```
+
+**Output:**
+```json
+{
+  "code": "0",
+  "data": [
+    {
+      "orderId": "123456789",
+      "txHash": "0xabc123def456..."
+    }
+  ],
+  "msg": ""
+}
+```
+
+**Display to user:**
+- "Transaction broadcast successfully!"
+- "Order ID: 123456789"
+- "Tx Hash: 0xabc123def456..."
+- "Track status with: opentrade gateway orders --order-id 123456789"
+
+---
+
+## 6. Query Order Status
+
+Query the status of a broadcast transaction by order ID.
+
+```bash
+opentrade gateway orders \
+  --address <wallet_address> \
+  --chain <chain_name> \
+  --order-id <order_id> \
+  --router <router> \
+  --version <version>
+```
+
+**Parameters:**
+- `--address`: Wallet address (required)
+- `--chain`: Chain name (required)
+- `--order-id`: Order ID from broadcast response (required)
+- `--router`: Router name (default: `okx`)
+- `--version`: Router version (default: `v1`)
+
+**Example:**
+```bash
+opentrade gateway orders \
+  --address 0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb \
+  --chain xlayer \
+  --order-id 123456789 \
+  --router okx \
+  --version v1
+```
+
+**Output:**
+```json
+{
+  "code": "0",
+  "data": [
+    {
+      "orderId": "123456789",
+      "txHash": "0xabc123def456...",
+      "txStatus": "2",
+      "chainId": "196",
+      "blockNumber": "12345678",
+      "timestamp": "1709876543"
+    }
+  ],
+  "msg": ""
+}
+```
+
+**Transaction Status Codes:**
+- `0`: Pending (not yet confirmed)
+- `1`: Failed (transaction reverted or rejected)
+- `2`: Success (confirmed on-chain)
+
+**Display to user:**
+- "Order 123456789: Success"
+- "Tx Hash: 0xabc123def456..."
+- "Block: 12345678"
+- "Status: Confirmed on-chain"
+
+---
+
+## Workflow Examples
+
+**User says:** "What's the gas price on XLayer?"
+
+```bash
+opentrade gateway gas --chain xlayer --router okx --version v1
+# → Display: Normal: 0.1 Gwei, Fast: 0.1 Gwei, Slow: 0.1 Gwei
+```
+
+**User says:** "How much gas do I need to send 1 ETH?"
+
+```bash
+opentrade gateway gas-limit \
+  --from 0xYourWallet \
+  --to 0xRecipient \
+  --chain ethereum \
+  --router okx \
+  --version v1 \
+  --value 1000000000000000000
+# → Display: Gas limit: 21000, Estimated cost: ~0.002 ETH ($5.50)
+```
+
+**User says:** "Simulate this transaction before I send it"
+
+```bash
+opentrade gateway simulate \
+  --from 0xYourWallet \
+  --to 0xContract \
+  --chain xlayer \
+  --router okx \
+  --version v1 \
+  --data 0xa9059cbb... \
+  --gas-limit 100000
+# → Display: Simulation successful! Gas used: 65432
+```
+
+**User says:** "Broadcast this signed transaction"
+
+```bash
+opentrade gateway broadcast \
+  --signed-tx 0xf86c...signed \
+  --address 0xYourWallet \
+  --chain xlayer \
+  --router okx \
+  --version v1
 # → Display: Transaction broadcast! Order ID: 123456789, Track status with Orders command
 ```
 
 **User says:** "Check status of order 123456789"
 
 ```bash
-curl -s -H "Authorization: Bearer $OPEN_TOKEN" \
-  "https://ai.6551.io/open/trader/{router}/{version}/gateway/orders?address=0x...&chainIndex=196&orderId=123456789"
+opentrade gateway orders \
+  --address 0xYourWallet \
+  --chain xlayer \
+  --order-id 123456789 \
+  --router okx \
+  --version v1
 # → Display: Status: confirmed, TxHash: 0xabc..., Block: 12345678
 ```
 
 ## Edge Cases
 
-- **Invalid signed transaction**: returns error — verify transaction format
-- **Insufficient gas**: simulation fails — increase gas limit
-- **Transaction reverts**: simulation shows revert reason — fix contract interaction
-- **Nonce too low**: broadcast fails — check wallet nonce
-- **Order not found**: may still be processing — wait and retry
-- **Network congestion**: transaction pending — monitor gas prices
+- **MEV protection**: Broadcasting through OpenTrade nodes may offer MEV protection on supported chains.
+- **Solana special handling**: Solana signed transactions use **base58** encoding (not hex). Ensure the `--signed-tx` format matches the chain.
+- **Chain not supported**: call `opentrade trade routers` first to verify.
+- **Node return failed**: the underlying blockchain node rejected the transaction. Common causes: insufficient gas, nonce too low, contract revert. Retry with corrected parameters.
+- **Wallet type mismatch**: the address format does not match the chain (e.g., EVM address on Solana chain).
 - **Network error**: retry once, then prompt user to try again later
 - **Region restriction (error code 50125 or 80001)**: do NOT show the raw error code to the user. Instead, display a friendly message: `⚠️ Service is not available in your region. Please switch to a supported region and try again.`
+- **Transaction already broadcast**: if the same `--signed-tx` is broadcast twice, the API may return an error or the same `txHash` — handle idempotently.
 
 ## Amount Display Rules
 
-- Gas prices: display in Gwei for readability (1 Gwei = 10^9 wei)
-- Transaction values: display in UI units with token symbol
-- Always show USD equivalent when possible
+- Gas prices in Gwei for EVM chains (`18.5 Gwei`), never raw wei
+- Gas limit as integer (`21000`, `145000`)
+- USD gas cost estimate when possible
+- Transaction values in UI units (`1.5 ETH`), never base units
 
 ## Global Notes
 
+- **This skill does NOT sign transactions** — it only broadcasts pre-signed transactions
+- Amounts in parameters use **minimal units** (wei/lamports)
+- Gas price fields: use `normal` for most transactions, `fast` for urgent, `slow` for low priority
 - EVM contract addresses must be **all lowercase**
-- Use `chainIndex` parameter (not `chainId`)
-- This API does NOT sign transactions — user must sign locally
-- For Solana: use base58-encoded signed transactions
-- All output is JSON format
-- Get your API token at https://6551.io/mcp
+- The CLI resolves chain names automatically (e.g., `ethereum` → `1`, `solana` → `501`)
+- The CLI handles authentication internally via environment variables — set `OPEN_TOKEN` in `.env` file or environment
+- Get your API token at: https://6551.io/mcp
 - Each request consumes 1 quota unit
-- Base URL: `https://ai.6551.io/open`
-- Authentication: Bearer token in Authorization header

@@ -146,30 +146,84 @@ curl -s -H "Authorization: Bearer $OPEN_TOKEN" \
 
 ## Cross-Skill Workflows
 
-### Workflow A: Research Token Before Buying
+This skill is the **execution endpoint** of most user trading flows. It almost always needs input from other skills first.
 
-> User: "Tell me about BONK, show me the chart, then buy if it looks good"
+### Workflow A: Full Swap by Token Name (most common)
 
-```
-1. opentrade-token     → search BONK on Solana
-2. opentrade-market    → get price info (market cap, liquidity, 24h volume)
-3. opentrade-market    → get K-line chart for visual trend
-       ↓ user decides to buy
-4. opentrade-dex-swap  → get quote
-5. opentrade-dex-swap  → get swap transaction
-6. opentrade-transaction → broadcast transaction
-```
-
-### Workflow B: Quick Swap
-
-> User: "Swap 100 USDC for ETH on Ethereum"
+> User: "Swap 1 SOL for BONK on Solana"
 
 ```
-1. opentrade-dex-swap  → get quote
-2. opentrade-dex-swap  → get approval (if needed)
-3. opentrade-dex-swap  → get swap transaction
-4. opentrade-transaction → broadcast
-5. opentrade-transaction → track status
+1. opentrade-token       search BONK on Solana (keyword=BONK, chains=501)     → get BONK tokenContractAddress
+       ↓ tokenContractAddress
+2. opentrade-dex-swap    Quote API (chainIndex=501, fromTokenAddress=11111111111111111111111111111111,
+                         toTokenAddress=<BONK_address>, amount=1000000000)    → get quote
+       ↓ user confirms
+3. opentrade-dex-swap    Swap API (chainIndex=501, fromTokenAddress=11111111111111111111111111111111,
+                         toTokenAddress=<BONK_address>, amount=1000000000,
+                         slippagePercent=1, userWalletAddress=<addr>)         → get swap calldata
+4. User signs the transaction
+5. opentrade-transaction broadcast transaction (signedTx=<tx>, address=<addr>, chainIndex=501)
+```
+
+**Data handoff**:
+- `tokenContractAddress` from step 1 → `toTokenAddress` in steps 2-3
+- SOL native address = `11111111111111111111111111111111` → `fromTokenAddress`. Do NOT use wSOL address.
+- Amount `1 SOL` = `1000000000` (9 decimals) → `amount` param
+
+### Workflow B: EVM Swap with Approval
+
+> User: "Swap 100 USDC for OKB on XLayer"
+
+```
+1. opentrade-token       search USDC on XLayer (keyword=USDC, chains=196)     → get USDC address
+2. opentrade-dex-swap    Quote API (chainIndex=196, fromTokenAddress=<USDC>,
+                         toTokenAddress=0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee,
+                         amount=100000000)                                    → get quote
+       ↓ check isHoneyPot, taxRate, priceImpactPercent
+3. opentrade-dex-swap    Approve API (chainIndex=196, tokenContractAddress=<USDC>,
+                         approveAmount=100000000)                             → get approval calldata
+4. User signs the approval transaction
+5. opentrade-transaction broadcast approval (signedTx=<tx>, address=<addr>, chainIndex=196)
+6. opentrade-dex-swap    Swap API (chainIndex=196, fromTokenAddress=<USDC>,
+                         toTokenAddress=0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee,
+                         amount=100000000, slippagePercent=1, userWalletAddress=<addr>)
+7. User signs the swap transaction
+8. opentrade-transaction broadcast swap (signedTx=<tx>, address=<addr>, chainIndex=196)
+```
+
+**Key**: EVM tokens (not native OKB) require an **approve** step. Skip it if user is selling native tokens.
+
+### Workflow C: Compare Quote Then Execute
+
+```
+1. Quote API (chainIndex, fromTokenAddress, toTokenAddress, amount)           → get quote with route info
+2. Display to user: expected output, gas, price impact, route
+3. If price impact > 5% → warn user
+4. If isHoneyPot = true → block trade, warn user
+5. User confirms → proceed to approve (if EVM) → swap
+```
+
+## Swap Flow
+
+### EVM Chains (XLayer, Ethereum, BSC, Base, etc.)
+
+```
+1. Quote API                                                                   → Get price and route
+2. Approve API (if needed)                                                     → Get approval calldata
+3. User signs the approval transaction
+4. opentrade-transaction broadcast                                             → Broadcast approval tx
+5. Swap API                                                                    → Get swap calldata
+6. User signs the swap transaction
+7. opentrade-transaction broadcast                                             → Broadcast swap tx
+```
+
+### Solana
+
+```
+1. Quote API                                                                   → Get price and route
+2. Swap API                                                                    → Get swap calldata
+3. User signs the transaction
+4. opentrade-transaction broadcast                                             → Broadcast tx
 ```
 
 ## Operation Flow

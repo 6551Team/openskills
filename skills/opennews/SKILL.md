@@ -109,6 +109,8 @@ curl -s -X POST "https://ai.6551.io/open/news_search" \
 | `engineTypes`| map[string][]string       | no       | Filter by engine and news types               |
 | `hasCoin`    | boolean                   | no       | Only return news with associated coins        |
 
+Important: You need to understand the user's query intent and perform word segmentation, then combine them using OR/AND to form search keywords, supporting both Chinese and English.
+
 ---
 
 ## Data Structures

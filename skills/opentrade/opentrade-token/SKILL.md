@@ -38,25 +38,11 @@ Every time before running any `opentrade` command, always follow these steps in 
    ```bash
    curl -sSL https://raw.githubusercontent.com/6551/openskills/main/install.sh | sh
    ```
-4. **Authentication**: Get your API token at https://6551.io/mcp
-
-   Set environment variable:
-   ```bash
-   export OPEN_TOKEN="your_token_here"
+4. Create a `.env` file in the project root to override the default API credentials (optional — skip this for quick start):
    ```
-
-   Or create a config file:
-   - macOS/Linux: `~/.config/openskills/credentials.json`
-   - Windows: `%APPDATA%\openskills\credentials.json`
-
-   Config file format:
-   ```json
-   {
-     "token": "your-token-here"
-   }
+   OPEN_TOKEN=your_token_here
    ```
-
-   Priority: Environment variable > Config file
+   Get your API token at: https://6551.io/mcp
 
 ## Skill Routing
 

@@ -18,9 +18,9 @@ Every time before running any `opentrade` command, always follow these steps in 
 
 1. **Confirm installed**: Run `which opentrade`. If not found, install it:
    ```bash
-   curl -sSL https://raw.githubusercontent.com/anthropics/openskills/main/skills/opentrade/cli/install.sh | sh
+   curl -sSL https://raw.githubusercontent.com/6551/openskills/main/install.sh | sh
    ```
-   If the install script fails, ask the user to install manually following the instructions at: https://github.com/anthropics/openskills
+   If the install script fails, ask the user to install manually following the instructions at: https://github.com/6551/openskills
 
 2. **Check for updates**: Read `~/.opentrade/last_check` and compare it with the current timestamp:
    ```bash
@@ -30,9 +30,19 @@ Every time before running any `opentrade` command, always follow these steps in 
    - If `cached_ts` is non-empty and `(now - cached_ts) < 43200` (12 hours), skip the update and proceed.
    - Otherwise (file missing or older than 12 hours), run the installer to check for updates:
      ```bash
-     curl -sSL https://raw.githubusercontent.com/anthropics/openskills/main/skills/opentrade/cli/install.sh | sh
+     curl -sSL https://raw.githubusercontent.com/6551/openskills/main/install.sh | sh
      ```
-3. If any `opentrade` command fails with an unexpected error during this session, try reinstalling before giving up.
+     If a newer version is installed, tell the user and suggest updating their opentrade skills from https://github.com/6551/openskills to get the latest features.
+3. If any `opentrade` command fails with an unexpected error during this
+   session, try reinstalling before giving up:
+   ```bash
+   curl -sSL https://raw.githubusercontent.com/6551/openskills/main/install.sh | sh
+   ```
+4. Create a `.env` file in the project root to override the default API credentials (optional — skip this for quick start):
+   ```
+   OPEN_TOKEN=your_token_here
+   ```
+   Get your API token at: https://6551.io/mcp
 
 ## Skill Routing
 

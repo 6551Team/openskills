@@ -1,5 +1,5 @@
 ---
-name: opentrade-transaction
+name: opentrade-gateway
 description: "This skill should be used when the user asks to 'broadcast transaction', 'send tx', 'estimate gas', 'simulate transaction', 'check tx status', 'track my transaction', 'get gas price', 'gas limit', 'broadcast signed tx', or mentions broadcasting transactions, sending transactions on-chain, gas estimation, transaction simulation, tracking broadcast orders, or checking transaction status. Covers gas price, gas limit estimation, transaction simulation, transaction broadcasting, and order tracking across XLayer, Solana, Ethereum, Base, BSC, Arbitrum, Polygon, and 20+ other chains. Do NOT use for swap quote or execution — use opentrade-dex-swap instead. Do NOT use for general programming questions about transaction handling."
 license: Apache-2.0
 metadata:
@@ -50,7 +50,7 @@ Every time before running any `opentrade` command, always follow these steps in 
 - For market prices → use `opentrade-market`
 - For token search → use `opentrade-token`
 - For wallet balances / portfolio → use `opentrade-wallet`
-- For transaction broadcasting → use this skill (`opentrade-transaction`)
+- For transaction broadcasting → use this skill (`opentrade-gateway`)
 
 ## Quickstart
 

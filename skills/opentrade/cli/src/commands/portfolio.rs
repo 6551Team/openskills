@@ -7,139 +7,170 @@ use crate::output;
 
 #[derive(Subcommand)]
 pub enum PortfolioCommand {
-    /// Get all token balances for a wallet
-    AllBalances {
-        /// Wallet address
-        #[arg(long)]
-        address: String,
-        /// Chain
-        #[arg(long)]
-        chain: String,
-    },
-    /// Get total portfolio value in USD
+    /// Get supported chains for balance queries
+    Chains,
+    /// Get total asset value for a wallet address
     TotalValue {
         /// Wallet address
         #[arg(long)]
         address: String,
-        /// Chain
+        /// Chain IDs or names, comma-separated (e.g. "xlayer,solana,ethereum")
         #[arg(long)]
-        chain: String,
+        chains: String,
+        /// Asset type: 0=all (default), 1=tokens only, 2=DeFi only
+        #[arg(long)]
+        asset_type: Option<String>,
+        /// Exclude risky tokens (default true). Only ETH/BSC/SOL/BASE
+        #[arg(long)]
+        exclude_risk: Option<bool>,
     },
-    /// Batch query specific token balances
-    Balances {
+    /// Get all token balances for a wallet address
+    AllBalances {
         /// Wallet address
         #[arg(long)]
         address: String,
-        /// Chain
+        /// Chain IDs or names, comma-separated (e.g. "xlayer,solana,ethereum")
         #[arg(long)]
-        chain: String,
-        /// Token addresses (comma-separated)
+        chains: String,
+        /// Exclude risky tokens: 0=filter out (default), 1=include. Only ETH/BSC/SOL/BASE
+        #[arg(long)]
+        exclude_risk: Option<String>,
+    },
+    /// Get specific token balances for a wallet address
+    TokenBalances {
+        /// Wallet address
+        #[arg(long)]
+        address: String,
+        /// Token list: "chainIndex:tokenAddress" pairs, comma-separated (e.g. "196:,196:0x74b7...")
+        /// Use empty address for native token (e.g. "196:" for native OKB)
         #[arg(long)]
         tokens: String,
-    },
-    /// Get address transaction history
-    Transactions {
-        /// Wallet address
+        /// Exclude risky tokens: 0=filter out (default), 1=include
         #[arg(long)]
-        address: String,
-        /// Chain
-        #[arg(long)]
-        chain: String,
-        /// Number of results
-        #[arg(long)]
-        limit: Option<String>,
-        /// Offset for pagination
-        #[arg(long)]
-        offset: Option<String>,
+        exclude_risk: Option<String>,
     },
 }
 
 pub async fn execute(ctx: &Context, cmd: PortfolioCommand) -> Result<()> {
     match cmd {
-        PortfolioCommand::AllBalances { address, chain } => {
-            all_balances(ctx, &address, &chain).await
-        }
-        PortfolioCommand::TotalValue { address, chain } => {
-            total_value(ctx, &address, &chain).await
-        }
-        PortfolioCommand::Balances {
+        PortfolioCommand::Chains => chains(ctx).await,
+        PortfolioCommand::TotalValue {
             address,
-            chain,
+            chains,
+            asset_type,
+            exclude_risk,
+        } => total_value(ctx, &address, &chains, asset_type.as_deref(), exclude_risk).await,
+        PortfolioCommand::AllBalances {
+            address,
+            chains,
+            exclude_risk,
+        } => all_balances(ctx, &address, &chains, exclude_risk.as_deref()).await,
+        PortfolioCommand::TokenBalances {
+            address,
             tokens,
-        } => balances(ctx, &address, &chain, &tokens).await,
-        PortfolioCommand::Transactions {
-            address,
-            chain,
-            limit,
-            offset,
-        } => {
-            transactions(ctx, &address, &chain, limit.as_deref(), offset.as_deref()).await
-        }
+            exclude_risk,
+        } => token_balances(ctx, &address, &tokens, exclude_risk.as_deref()).await,
     }
 }
 
-/// GET /trader/{router}/{version}/balance/all-balances
-async fn all_balances(ctx: &Context, address: &str, chain: &str) -> Result<()> {
-    let chain_index = crate::chains::resolve_chain(chain);
+/// GET /trader/{router}/{version}/balance/supported/chain
+async fn chains(ctx: &Context) -> Result<()> {
     let client = ctx.client()?;
     let data = client
-        .get(
-            "/balance/all-balances",
-            &[("address", address), ("chainIndex", chain_index.as_str())],
-        )
+        .get("/balance/chains", &[])
         .await?;
     output::success(data);
     Ok(())
 }
 
-/// GET /trader/{router}/{version}/balance/total-value
-async fn total_value(ctx: &Context, address: &str, chain: &str) -> Result<()> {
-    let chain_index = crate::chains::resolve_chain(chain);
-    let client = ctx.client()?;
-    let data = client
-        .get(
-            "/balance/total-value",
-            &[("address", address), ("chainIndex", chain_index.as_str())],
-        )
-        .await?;
-    output::success(data);
-    Ok(())
-}
-
-/// POST /trader/{router}/{version}/balance/token-balances
-async fn balances(ctx: &Context, address: &str, chain: &str, tokens: &str) -> Result<()> {
-    let chain_index = crate::chains::resolve_chain(chain);
-    let client = ctx.client()?;
-    let token_list: Vec<&str> = tokens.split(',').collect();
-    let body = json!({
-        "address": address,
-        "chainIndex": chain_index,
-        "tokenAddresses": token_list,
-    });
-    let data = client.post("/balance/token-balances", &body).await?;
-    output::success(data);
-    Ok(())
-}
-
-/// GET /trader/{router}/{version}/balance/history
-async fn transactions(
+/// GET /trader/{router}/{version}/balance/total-value-by-address
+async fn total_value(
     ctx: &Context,
     address: &str,
-    chain: &str,
-    limit: Option<&str>,
-    offset: Option<&str>,
+    chains: &str,
+    asset_type: Option<&str>,
+    exclude_risk: Option<bool>,
 ) -> Result<()> {
-    let chain_index = crate::chains::resolve_chain(chain);
+    let chain_indices = crate::chains::resolve_chains(chains);
     let client = ctx.client()?;
-    let mut query: Vec<(&str, &str)> =
-        vec![("address", address), ("chainIndex", chain_index.as_str())];
-    if let Some(l) = limit {
-        query.push(("limit", l));
+    let mut query: Vec<(&str, String)> = vec![
+        ("address", address.to_string()),
+        ("chains", chain_indices.clone()),
+    ];
+    if let Some(at) = asset_type {
+        query.push(("assetType", at.to_string()));
     }
-    if let Some(o) = offset {
-        query.push(("offset", o));
+    if let Some(er) = exclude_risk {
+        query.push(("excludeRiskToken", er.to_string()));
     }
-    let data = client.get("/balance/history", &query).await?;
+    let query_refs: Vec<(&str, &str)> = query.iter().map(|(k, v)| (*k, v.as_str())).collect();
+    let data = client
+        .get("/balance/total-value-by-address", &query_refs)
+        .await?;
+    output::success(data);
+    Ok(())
+}
+
+/// GET /trader/{router}/{version}/balance/all-token-balances-by-address
+async fn all_balances(
+    ctx: &Context,
+    address: &str,
+    chains: &str,
+    exclude_risk: Option<&str>,
+) -> Result<()> {
+    let chain_indices = crate::chains::resolve_chains(chains);
+    let client = ctx.client()?;
+    let mut query: Vec<(&str, String)> = vec![
+        ("address", address.to_string()),
+        ("chains", chain_indices.clone()),
+    ];
+    if let Some(er) = exclude_risk {
+        query.push(("excludeRiskToken", er.to_string()));
+    }
+    let query_refs: Vec<(&str, &str)> = query.iter().map(|(k, v)| (*k, v.as_str())).collect();
+    let data = client
+        .get("/balance/all-token-balances-by-address", &query_refs)
+        .await?;
+    output::success(data);
+    Ok(())
+}
+
+/// POST /trader/{router}/{version}/balance/token-balances-by-address
+async fn token_balances(
+    ctx: &Context,
+    address: &str,
+    tokens: &str,
+    exclude_risk: Option<&str>,
+) -> Result<()> {
+    let client = ctx.client()?;
+
+    // Parse "chainIndex:tokenAddress" pairs
+    let token_list: Vec<serde_json::Value> = tokens
+        .split(',')
+        .map(|pair| {
+            let parts: Vec<&str> = pair.splitn(2, ':').collect();
+            let chain_index = if parts.is_empty() { "" } else { parts[0] };
+            let token_address = if parts.len() > 1 { parts[1] } else { "" };
+            // Resolve chain name to index if not numeric
+            let resolved_chain = crate::chains::resolve_chain(chain_index);
+            json!({
+                "chainIndex": resolved_chain,
+                "tokenContractAddress": token_address
+            })
+        })
+        .collect();
+
+    let mut body = json!({
+        "address": address,
+        "tokenContractAddresses": token_list,
+    });
+    if let Some(er) = exclude_risk {
+        body["excludeRiskToken"] = json!(er);
+    }
+
+    let data = client
+        .post("/balance/token-balances-by-address", &body)
+        .await?;
     output::success(data);
     Ok(())
 }

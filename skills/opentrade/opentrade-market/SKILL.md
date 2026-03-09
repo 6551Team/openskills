@@ -49,7 +49,7 @@ Every time before running any `opentrade` command, always follow these steps in 
 - For token search / metadata / rankings / holder analysis → use `opentrade-token`
 - For swap execution → use `opentrade-dex-swap`
 - For transaction broadcasting → use `opentrade-transaction`
-- For wallet balances / portfolio → use `opentrade-wallet`
+- For wallet balances / portfolio → use `opentrade-portfolio`
 - Signal data (smart money / whale / KOL buy signals, signal-supported chains) → use `opentrade-market`
 - Meme pump scanning (token lists, dev info, bundle detection, aped wallets) → use `opentrade-market`
 - Meme token safety (rug pull check, dev reputation, bundler/sniper analysis, similar tokens by same dev) → use `opentrade-market`

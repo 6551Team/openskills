@@ -1,5 +1,5 @@
 ---
-name: opentrade-wallet
+name: opentrade-portfolio
 description: "This skill should be used when the user asks to 'check my wallet balance', 'show my token holdings', 'how much OKB do I have', 'what tokens do I have', 'check my portfolio value', 'view my assets', 'how much is my portfolio worth', 'what's in my wallet', 'show transaction history', 'recent transactions', or mentions checking wallet balance, total assets, token holdings, portfolio value, remaining funds, transaction history, or multi-chain balance lookup. Supports XLayer, Solana, Ethereum, Base, BSC, Arbitrum, Polygon, and 20+ other chains. Do NOT use for general programming questions about balance variables or API documentation. Do NOT use when the user is asking how to build or integrate a balance feature into code."
 license: Apache-2.0
 metadata:

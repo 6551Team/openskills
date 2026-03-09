@@ -25,7 +25,7 @@ https://ai.6551.io/open/trader/{router}/{version}
 |-------|-------|-----------|-------------|
 | opentrade-dex-swap | 🔄 | 5 | Execute swaps |
 | opentrade-transaction | 📡 | 6 | Manage transactions |
-| opentrade-wallet | 💰 | 4 | Check balances |
+| opentrade-portfolio | 💰 | 4 | Check balances |
 | opentrade-market | 📊 | 9 | Market data |
 | opentrade-token | 🪙 | 5 | Token info |
 

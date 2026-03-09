@@ -8,7 +8,7 @@ OpenTrade provides 5 specialized skills for comprehensive blockchain trading ope
 
 1. **opentrade-dex-swap** - DEX swap operations (quote, swap, approve, liquidity)
 2. **opentrade-transaction** - Transaction management (gas, simulation, broadcast, tracking)
-3. **opentrade-wallet** - Wallet operations (balances, portfolio value, transaction history)
+3. **opentrade-portfolio** - Wallet / Portfolio operations (balances, portfolio value, transaction history)
 4. **opentrade-market** - Market data (prices, K-line, trades, smart money signals)
 5. **opentrade-token** - Token information (search, info, holders, trending)
 
@@ -74,9 +74,9 @@ curl -s -H "Authorization: Bearer $OPEN_TOKEN" \
   "https://ai.6551.io/open/trader/{router}/{version}/transaction/gas-price?chainIndex=1"
 ```
 
-### 💰 opentrade-wallet
+### 💰 opentrade-portfolio
 
-Query wallet balances and transaction history.
+Query portfolio balances and transaction history.
 
 **Key Features:**
 - Get token balances (single or batch)

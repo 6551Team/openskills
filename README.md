@@ -17,7 +17,7 @@ AI coding assistant skills for crypto news, social media, and trading operations
 |-------|-------------|-----------|
 | `opentrade-dex-swap` | DEX swap operations including quote, swap transaction, approve, and token pairs | 5 |
 | `opentrade-transaction` | Transaction management including gas estimation, simulation, broadcast, and tracking | 6 |
-| `opentrade-wallet` | Wallet balance queries, portfolio value, and transaction history | 4 |
+| `opentrade-portfolio` | Wallet balance queries, portfolio value, and transaction history | 4 |
 | `opentrade-market` | Market data including prices, K-line, trades, and smart money signals | 9 |
 | `opentrade-token` | Token discovery, search, basic info, holders, and trending tokens | 5 |
 
@@ -98,7 +98,7 @@ The skills work together in typical crypto workflows:
 4. Monitor transaction status
 
 ### Portfolio Management
-`opentrade-wallet` → `opentrade-market` → `opentrade-token` → `opentrade-dex-swap`
+`opentrade-portfolio` → `opentrade-market` → `opentrade-token` → `opentrade-dex-swap`
 
 1. Check current balances and total value
 2. Get current prices for held tokens
@@ -106,7 +106,7 @@ The skills work together in typical crypto workflows:
 4. Rebalance portfolio via swaps
 
 ### Token Research
-`opentrade-token` → `opentrade-market` → `opentrade-wallet` → `opentrade-dex-swap`
+`opentrade-token` → `opentrade-market` → `opentrade-portfolio` → `opentrade-dex-swap`
 
 1. Search and discover trending tokens
 2. Analyze price data and K-line charts

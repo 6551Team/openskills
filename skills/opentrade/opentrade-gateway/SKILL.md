@@ -49,7 +49,7 @@ Every time before running any `opentrade` command, always follow these steps in 
 - For swap quote and execution → use `opentrade-dex-swap`
 - For market prices → use `opentrade-market`
 - For token search → use `opentrade-token`
-- For wallet balances / portfolio → use `opentrade-wallet`
+- For wallet balances / portfolio → use `opentrade-portfolio`
 - For transaction broadcasting → use this skill (`opentrade-gateway`)
 
 ## Quickstart

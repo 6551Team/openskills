@@ -12,7 +12,7 @@ openskills/
 │   └── opentrade/         # Trading operations
 │       ├── opentrade-dex-swap/      # Swap execution
 │       ├── opentrade-transaction/   # Transaction tracking
-│       ├── opentrade-wallet/        # Portfolio management
+│       ├── opentrade-portfolio/      # Portfolio management
 │       ├── opentrade-market/        # Market data
 │       └── opentrade-token/         # Token search
 ├── README.md
@@ -29,7 +29,7 @@ openskills/
 ### Trading Operations (opentrade)
 - **opentrade-dex-swap**: DEX swap operations (quote, swap, approve, token pairs)
 - **opentrade-transaction**: Transaction tracking (broadcast, query, history)
-- **opentrade-wallet**: Wallet balance and portfolio management
+- **opentrade-portfolio**: Portfolio balance and value management
 - **opentrade-market**: Market data (prices, liquidity, token search)
 - **opentrade-token**: Token discovery (search, info, holders, trending)
 
@@ -63,17 +63,17 @@ All skills use: `https://ai.6551.io`
 
 ### Trading Flow
 1. Search token (`opentrade-token`)
-2. Check balance (`opentrade-wallet`)
+2. Check balance (`opentrade-portfolio`)
 3. Get quote (`opentrade-dex-swap`)
 4. Execute swap (`opentrade-dex-swap`)
 5. Broadcast transaction (`opentrade-transaction`)
 6. Track status (`opentrade-transaction`)
 
 ### Portfolio Analysis
-1. Get total value (`opentrade-wallet`)
-2. Get all balances (`opentrade-wallet`)
+1. Get total value (`opentrade-portfolio`)
+2. Get all balances (`opentrade-portfolio`)
 3. Get prices (`opentrade-market`)
-4. View history (`opentrade-wallet`)
+4. View history (`opentrade-portfolio`)
 
 ### News-Driven Trading
 1. Search news (`opennews`)

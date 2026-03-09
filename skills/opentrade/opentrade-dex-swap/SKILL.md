@@ -49,7 +49,7 @@ Every time before running any `opentrade` command, always follow these steps in 
 - For token search → use `opentrade-token`
 - For market prices → use `opentrade-market`
 - For transaction broadcasting → use `opentrade-gateway`
-- For wallet balances / portfolio → use `opentrade-wallet`
+- For wallet balances / portfolio → use `opentrade-portfolio`
 
 ## Quickstart
 

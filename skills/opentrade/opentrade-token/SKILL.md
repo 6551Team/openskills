@@ -49,7 +49,7 @@ Every time before running any `opentrade` command, always follow these steps in 
 - For real-time prices / K-lines / trade history → use `opentrade-market`
 - For swap execution → use `opentrade-dex-swap`
 - For transaction broadcasting → use `opentrade-transaction`
-- For wallet balances / portfolio → use `opentrade-wallet`
+- For wallet balances / portfolio → use `opentrade-portfolio`
 
 ## Router Discovery
 

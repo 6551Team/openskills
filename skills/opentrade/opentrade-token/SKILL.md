@@ -1,6 +1,6 @@
 ---
 name: opentrade-token
-description: "This skill should be used when the user asks to 'find a token', 'search for a token', 'look up PEPE', 'what's trending', 'top tokens', 'trending tokens on Solana', 'token rankings', 'who holds this token', 'holder distribution', 'is this token safe', 'token market cap', 'token liquidity', 'research a token', 'tell me about this token', 'token info', or mentions searching for tokens by name or address, discovering trending tokens, viewing token rankings, checking holder distribution, or analyzing token market cap and liquidity. Covers token search, metadata, market cap, liquidity, volume, trending token rankings, and holder analysis across XLayer, Solana, Ethereum, Base, BSC, Arbitrum, Polygon, and 20+ other chains. Do NOT use when the user says only a single generic word like 'tokens' or 'crypto' without specifying a token name, action, or question. For simple current price checks, price charts, candlestick data, or trade history, use opentrade-market instead."
+description: "This skill should be used when the user asks to 'find a token', 'search for a token', 'look up PEPE', 'what's trending', 'top tokens', 'trending tokens on Solana', 'token rankings', 'who holds this token', 'holder distribution', 'token market cap', 'token liquidity', 'research a token', 'tell me about this token', 'token info', or mentions searching for tokens by name or address, discovering trending tokens, viewing token rankings, checking holder distribution, or analyzing token market cap and liquidity. Covers token search, metadata, market cap, liquidity, volume, trending token rankings, and holder analysis across XLayer, Solana, Ethereum, Base, BSC, Arbitrum, Polygon, and 20+ other chains. Do NOT use when the user says only a single generic word like 'tokens' or 'crypto' without specifying a token name, action, or question. For simple current price checks, price charts, candlestick data, or trade history, use opentrade-market instead. For meme token safety analysis, developer reputation, rug pull checks, bundle/sniper detection, or finding tokens by same creator, use opentrade-market instead."
 license: Apache-2.0
 metadata:
   author: 6551
@@ -79,8 +79,10 @@ opentrade trade routers
 
 - For real-time prices / K-lines / trade history → use `opentrade-market`
 - For swap execution → use `opentrade-dex-swap`
-- For transaction broadcasting → use `opentrade-transaction`
+- For transaction broadcasting → use `opentrade-gateway`
 - For wallet balances / portfolio → use `opentrade-portfolio`
+- For meme token safety (dev reputation, rug pull, bundlers, similar tokens by same dev) → use `opentrade-market`
+- For smart money / whale / KOL signals → use `opentrade-market`
 
 ## Quickstart
 
@@ -136,327 +138,276 @@ The CLI accepts human-readable chain names (e.g., `ethereum`, `solana`, `xlayer`
 
 ## Command Index
 
-| Command | Description |
+| # | Command | Description |
+|---|---|---|
+| 1 | `opentrade token search <query>` | Search for tokens by name, symbol, or address |
+| 2 | `opentrade token info <address>` | Get token basic info (name, symbol, decimals, logo) |
+| 3 | `opentrade token price-info <address>` | Get detailed price info (price, market cap, liquidity, volume, 24h change) |
+| 4 | `opentrade token toplist` | Get trending / top tokens |
+| 5 | `opentrade token holders <address>` | Get token holder distribution (top 20) |
+
+## Boundary: token vs market skill
+
+| Need | Use this skill (`opentrade-token`) | Use `opentrade-market` instead |
+|---|---|---|
+| Search token by name/symbol | `opentrade token search` | - |
+| Token metadata (decimals, logo) | `opentrade token info` | - |
+| Price + market cap + liquidity + multi-timeframe change | `opentrade token price-info` | - |
+| Token ranking (trending) | `opentrade token toplist` | - |
+| Holder distribution | `opentrade token holders` | - |
+| Raw real-time price (single value) | - | `opentrade market price` |
+| K-line / candlestick chart | - | `opentrade market kline` |
+| Trade history (buy/sell log) | - | `opentrade market trades` |
+| Index price (multi-source aggregate) | - | `opentrade market index` |
+| Meme token dev reputation / rug pull | - | `opentrade market memepump-token-dev-info` |
+| Bundle/sniper detection | - | `opentrade market memepump-token-bundle-info` |
+| Similar tokens by same creator | - | `opentrade market memepump-similar-tokens` |
+
+**Rule of thumb**: `opentrade-token` = token discovery & enriched analytics (search, trending, holders, market cap). `opentrade-market` = raw price feeds, charts, smart money signals & meme pump scanning (including dev reputation, rug pull checks, bundler analysis).
+
+## Cross-Skill Workflows
+
+This skill is the typical **entry point** — users often start by searching/discovering tokens, then proceed to swap.
+
+### Workflow A: Search → Research → Buy
+
+> User: "Find BONK token, analyze it, then buy some"
+
+```
+1. opentrade-token    opentrade token search BONK --chains solana              → get tokenContractAddress, chain, price
+       ↓ tokenContractAddress
+2. opentrade-token    opentrade token price-info <address> --chain solana      → market cap, liquidity, volume24H, priceChange24H
+3. opentrade-token    opentrade token holders <address> --chain solana         → top 20 holders distribution
+4. opentrade-market   opentrade market kline <address> --chain solana --bar 1H → hourly price chart
+       ↓ user decides to buy
+5. opentrade-dex-swap opentrade swap quote --from ... --to <address> --amount ... --chain solana
+6. opentrade-dex-swap opentrade swap swap --from ... --to <address> --amount ... --chain solana --wallet <addr>
+```
+
+**Data handoff**:
+- `tokenContractAddress` from step 1 → reused in all subsequent steps
+- `chain` from step 1 → reused in all subsequent steps
+- `decimal` from step 1 or `opentrade token info` → needed for minimal unit conversion in swap
+
+### Workflow B: Discover Trending → Investigate → Trade
+
+> User: "What's trending on Solana?"
+
+```
+1. opentrade-token    opentrade token toplist --chains solana --sort-by 5 --time-frame 4  → top tokens by 24h volume
+       ↓ user picks a token
+2. opentrade-token    opentrade token price-info <address> --chain solana                  → detailed analytics
+3. opentrade-token    opentrade token holders <address> --chain solana                     → check if whale-dominated
+4. opentrade-market   opentrade market kline <address> --chain solana                      → K-line for visual trend
+       ↓ user decides to trade
+5. opentrade-dex-swap opentrade swap swap --from ... --to ... --amount ... --chain solana --wallet <addr>
+```
+
+### Workflow C: Token Verification Before Swap
+
+Before swapping an unknown token, always verify:
+
+```
+1. opentrade-token    opentrade token search <name>                            → find token
+2. Check communityRecognized:
+   - true → proceed with normal caution
+   - false → warn user about risk
+3. opentrade-token    opentrade token price-info <address> → check liquidity:
+   - liquidity < $10K → warn about high slippage risk
+   - liquidity < $1K → strongly discourage trade
+4. opentrade-dex-swap opentrade swap quote ... → check isHoneyPot and taxRate
+5. If all checks pass → proceed to swap
+```
+
+## Operation Flow
+
+### Step 1: Identify Intent
+
+- Search for a token → `opentrade token search`
+- Get token metadata → `opentrade token info`
+- Get price + market cap + liquidity → `opentrade token price-info`
+- View rankings → `opentrade token toplist`
+- View holder distribution → `opentrade token holders`
+
+### Step 2: Collect Parameters
+
+- Missing chain → recommend XLayer (`--chain xlayer`, low gas, fast confirmation) as the default, then ask which chain the user prefers
+- Only have token name, no address → use `opentrade token search` first
+- For search, `--chains` defaults to `"1,501"` (Ethereum + Solana)
+- For toplist, `--sort-by` defaults to `5` (volume), `--time-frame` defaults to `4` (24h)
+
+### Step 3: Call and Display
+
+- Search results: show name, symbol, chain, price, 24h change
+- Indicate `communityRecognized` status for trust signaling
+- Price info: show market cap, liquidity, and volume together
+
+### Step 4: Suggest Next Steps
+
+After displaying results, suggest 2-3 relevant follow-up actions based on the command just executed:
+
+| Just called | Suggest |
 |---|---|
-| `opentrade token search` | Search tokens by name/symbol/address |
-| `opentrade token info` | Get basic token metadata |
-| `opentrade token price-info` | Get detailed price, liquidity, volume |
-| `opentrade token toplist` | Get trending/top tokens by various metrics |
-| `opentrade token holders` | Get holder distribution and top holders |
+| `token search` | 1. View detailed analytics (market cap, liquidity) → `opentrade token price-info` (this skill) 2. View price chart → `opentrade-market` 3. Buy/swap this token → `opentrade-dex-swap` |
+| `token info` | 1. View price and market data → `opentrade token price-info` (this skill) 2. Check holder distribution → `opentrade token holders` (this skill) |
+| `token price-info` | 1. View K-line chart → `opentrade-market` 2. Check holder distribution → `opentrade token holders` (this skill) 3. Buy/swap this token → `opentrade-dex-swap` |
+| `token toplist` | 1. View details for a specific token → `opentrade token price-info` (this skill) 2. View price chart → `opentrade-market` 3. Buy a trending token → `opentrade-dex-swap` |
+| `token holders` | 1. View price trend → `opentrade-market` 2. Buy/swap this token → `opentrade-dex-swap` |
 
----
+Present conversationally, e.g.: "Would you like to see the price chart or check the holder distribution?" — never expose skill names or endpoint paths to the user.
 
-## 1. Token Search
+## CLI Command Reference
 
-Search for tokens by name, symbol, or contract address across multiple chains.
+### 1. opentrade token search
 
-### Command
+Search for tokens by name, symbol, or contract address.
 
 ```bash
-opentrade token search <query> [options]
+opentrade token search <query> [--chains <chains>]
 ```
 
-### Options
-
-| Option | Type | Required | Description |
+| Param | Required | Default | Description |
 |---|---|---|---|
-| `<query>` | string | Yes | Token name, symbol, or contract address |
-| `--chains` | string | No | Comma-separated chain names (e.g., "ethereum,solana") |
-| `--limit` | number | No | Max results (default: 20, max: 100) |
+| `<query>` | Yes | - | Keyword: token name, symbol, or contract address (positional) |
+| `--chains` | No | `"1,501"` | Chain names or IDs, comma-separated (e.g., `"ethereum,solana"` or `"196,501"`) |
 
-### Examples
+**Return fields**:
 
-```bash
-# Search for USDC across all chains
-opentrade token search USDC
+| Field | Type | Description |
+|---|---|---|
+| `tokenContractAddress` | String | Token contract address |
+| `tokenSymbol` | String | Token symbol (e.g., `"ETH"`) |
+| `tokenName` | String | Token full name |
+| `tokenLogoUrl` | String | Token logo image URL |
+| `chainIndex` | String | Chain identifier |
+| `decimal` | String | Token decimals (e.g., `"18"`) |
+| `price` | String | Current price in USD |
+| `change` | String | 24-hour price change percentage |
+| `marketCap` | String | Market capitalization in USD |
+| `liquidity` | String | Liquidity in USD |
+| `holders` | String | Number of token holders |
+| `explorerUrl` | String | Block explorer URL for the token |
+| `tagList.communityRecognized` | Boolean | `true` = listed on Top 10 CEX or community verified |
 
-# Search on specific chains
-opentrade token search PEPE --chains "ethereum,base"
+### 2. opentrade token info
 
-# Search by contract address
-opentrade token search 0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48 --chain ethereum
-
-# Limit results
-opentrade token search ETH --limit 5
-```
-
-### Response Fields
-
-- `tokenContractAddress`: Contract address (lowercase for EVM)
-- `tokenSymbol`: Token symbol
-- `tokenName`: Full token name
-- `chainIndex`: Chain identifier
-- `decimals`: Token decimals
-- `totalSupply`: Total supply in base units
-- `circulatingSupply`: Circulating supply
-- `marketCap`: Market capitalization in USD
-- `price`: Current price in USD
-- `priceChange24h`: 24h price change percentage
-- `volume24h`: 24h trading volume in USD
-- `liquidity`: Total liquidity in USD
-- `communityRecognized`: Whether token is verified/recognized
-
-### Notes
-
-- Returns up to 100 results
-- EVM addresses must be lowercase
-- Use contract address for exact match
-- Symbol search may return multiple tokens
-
----
-
-## 2. Token Info
-
-Get basic metadata for a specific token.
-
-### Command
+Get token basic info (name, symbol, decimals, logo).
 
 ```bash
-opentrade token info <address> --chain <chain>
+opentrade token info <address> [--chain <chain>]
 ```
 
-### Options
-
-| Option | Type | Required | Description |
+| Param | Required | Default | Description |
 |---|---|---|---|
-| `<address>` | string | Yes | Token contract address |
-| `--chain` | string | Yes | Chain name (e.g., "ethereum", "solana") |
+| `<address>` | Yes | - | Token contract address (positional) |
+| `--chain` | No | `ethereum` | Chain name |
 
-### Examples
+**Return fields**:
 
-```bash
-# Get USDC info on Ethereum
-opentrade token info 0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48 --chain ethereum
+| Field | Type | Description |
+|---|---|---|
+| `tokenContractAddress` | String | Contract address |
+| `tokenSymbol` | String | Token symbol |
+| `tokenName` | String | Full name |
+| `chainIndex` | String | Chain identifier |
+| `decimal` | String | Token decimals |
+| `totalSupply` | String | Total supply |
+| `logoUrl` | String | Token logo URL |
+| `websiteUrl` | String | Official website |
+| `twitterUrl` | String | Twitter/X profile |
+| `telegramUrl` | String | Telegram group |
+| `discordUrl` | String | Discord server |
+| `communityRecognized` | Boolean | Verification status |
 
-# Get SOL info on Solana
-opentrade token info So11111111111111111111111111111111111111112 --chain solana
-```
+### 3. opentrade token price-info
 
-### Response Fields
-
-- `tokenContractAddress`: Contract address
-- `tokenSymbol`: Token symbol
-- `tokenName`: Full token name
-- `chainIndex`: Chain identifier
-- `decimals`: Token decimals
-- `totalSupply`: Total supply
-- `logoUrl`: Token logo URL
-- `websiteUrl`: Official website
-- `twitterUrl`: Twitter/X profile
-- `telegramUrl`: Telegram group
-- `discordUrl`: Discord server
-- `communityRecognized`: Verification status
-
-### Notes
-
-- Returns single token metadata
-- Use for detailed token information
-- Logo URLs may be empty for unverified tokens
-
----
-
-## 3. Token Price Info
-
-Get detailed price, liquidity, volume, and market data for a token.
-
-### Command
+Get detailed price, market cap, liquidity, volume, and multi-timeframe changes.
 
 ```bash
-opentrade token price-info <address> --chain <chain>
+opentrade token price-info <address> [--chain <chain>]
 ```
 
-### Options
-
-| Option | Type | Required | Description |
+| Param | Required | Default | Description |
 |---|---|---|---|
-| `<address>` | string | Yes | Token contract address |
-| `--chain` | string | Yes | Chain name |
+| `<address>` | Yes | - | Token contract address (positional) |
+| `--chain` | No | `ethereum` | Chain name |
 
-### Examples
+**Return fields**:
 
-```bash
-# Get WETH price info on Ethereum
-opentrade token price-info 0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2 --chain ethereum
+| Field | Type | Description |
+|---|---|---|
+| `price` | String | Current price in USD |
+| `priceChange1h` | String | 1h price change % |
+| `priceChange4h` | String | 4h price change % |
+| `priceChange12h` | String | 12h price change % |
+| `priceChange24h` | String | 24h price change % |
+| `volume24h` | String | 24h trading volume |
+| `liquidity` | String | Total liquidity in USD |
+| `liquidityChange24h` | String | 24h liquidity change % |
+| `marketCap` | String | Market capitalization |
+| `fullyDilutedValuation` | String | FDV |
+| `holders` | String | Number of token holders |
+| `transactions24h` | String | 24h transaction count |
+| `buys24h` | String | 24h buy count |
+| `sells24h` | String | 24h sell count |
 
-# Get BONK price info on Solana
-opentrade token price-info DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263 --chain solana
-```
+### 4. opentrade token toplist
 
-### Response Fields
-
-- `price`: Current price in USD
-- `priceChange1h`: 1h price change %
-- `priceChange4h`: 4h price change %
-- `priceChange12h`: 12h price change %
-- `priceChange24h`: 24h price change %
-- `volume24h`: 24h trading volume
-- `liquidity`: Total liquidity in USD
-- `liquidityChange24h`: 24h liquidity change %
-- `marketCap`: Market capitalization
-- `fullyDilutedValuation`: FDV
-- `holders`: Number of token holders
-- `transactions24h`: 24h transaction count
-- `buys24h`: 24h buy count
-- `sells24h`: 24h sell count
-
-### Notes
-
-- More detailed than basic token info
-- Includes time-series price changes
-- Use for trading decisions
-
----
-
-## 4. Token Top List (Trending)
-
-Get trending or top-ranked tokens by various metrics.
-
-### Command
+Get trending / top tokens by various metrics.
 
 ```bash
-opentrade token toplist [options]
+opentrade token toplist [--chains <chains>] [--sort-by <n>] [--time-frame <n>]
 ```
 
-### Options
-
-| Option | Type | Required | Description |
+| Param | Required | Default | Description |
 |---|---|---|---|
-| `--chains` | string | No | Comma-separated chain names |
-| `--sort-by` | number | No | Sort metric (see table below) |
-| `--time-frame` | number | No | Time window (see table below) |
-| `--limit` | number | No | Max results (default: 10, max: 100) |
+| `--chains` | No | `"1,501"` | Chain names or IDs, comma-separated |
+| `--sort-by` | No | `5` | Sort metric: `2` = price change, `5` = volume, `6` = market cap |
+| `--time-frame` | No | `4` | Time window: `1` = 5min, `2` = 1h, `3` = 4h, `4` = 24h |
 
-### Sort By Options
+**Return fields** (array of tokens):
 
-| Value | Metric |
-|---|---|
-| `1` | Market Cap |
-| `2` | Price Change % |
-| `3` | Liquidity |
-| `4` | Holders |
-| `5` | Volume |
-| `6` | Transactions |
+| Field | Type | Description |
+|---|---|---|
+| `tokenContractAddress` | String | Token contract address |
+| `tokenSymbol` | String | Token symbol |
+| `chainIndex` | String | Chain identifier |
+| `price` | String | Current price |
+| `change` | String | Price change % for selected time frame |
+| `volume` | String | Volume for selected time frame |
+| `marketCap` | String | Market capitalization |
+| `liquidity` | String | Liquidity in USD |
 
-### Time Frame Options
+### 5. opentrade token holders
 
-| Value | Period |
-|---|---|
-| `1` | 1 hour |
-| `2` | 4 hours |
-| `3` | 12 hours |
-| `4` | 24 hours |
-
-### Examples
+Get token holder distribution (top 20).
 
 ```bash
-# Top tokens by market cap (default)
-opentrade token toplist
-
-# Trending on Solana by 24h volume
-opentrade token toplist --chains solana --sort-by 5 --time-frame 4
-
-# Top 5 tokens by liquidity on Ethereum
-opentrade token toplist --chains ethereum --sort-by 3 --limit 5
-
-# Biggest gainers in last 1h across all chains
-opentrade token toplist --sort-by 2 --time-frame 1
+opentrade token holders <address> [--chain <chain>]
 ```
 
-### Response Fields
-
-- `rank`: Position in ranking
-- `tokenContractAddress`: Contract address
-- `tokenSymbol`: Token symbol
-- `tokenName`: Token name
-- `chainIndex`: Chain identifier
-- `price`: Current price
-- `priceChange`: Price change % for time frame
-- `volume`: Volume for time frame
-- `liquidity`: Current liquidity
-- `marketCap`: Market capitalization
-- `holders`: Number of holders
-- `transactions`: Transaction count for time frame
-
-### Notes
-
-- Default sort: market cap, 24h time frame
-- Results are cached for 5 minutes
-- Use for discovering trending tokens
-
----
-
-## 5. Token Holders
-
-Get holder distribution and top holders for a token.
-
-### Command
-
-```bash
-opentrade token holders <address> --chain <chain> [options]
-```
-
-### Options
-
-| Option | Type | Required | Description |
+| Param | Required | Default | Description |
 |---|---|---|---|
-| `<address>` | string | Yes | Token contract address |
-| `--chain` | string | Yes | Chain name |
-| `--limit` | number | No | Max holders to return (default: 20, max: 100) |
+| `<address>` | Yes | - | Token contract address (positional) |
+| `--chain` | No | `ethereum` | Chain name |
 
-### Examples
+**Return fields** (top 20 holders):
 
-```bash
-# Get top 20 holders
-opentrade token holders 0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48 --chain ethereum
+| Field | Type | Description |
+|---|---|---|
+| `data[].holdAmount` | String | Token amount held |
+| `data[].holderWalletAddress` | String | Holder wallet address |
 
-# Get top 50 holders
-opentrade token holders DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263 --chain solana --limit 50
-```
+## Input / Output Examples
 
-### Response Fields
-
-- `totalHolders`: Total number of holders
-- `top10Concentration`: % held by top 10 holders
-- `top50Concentration`: % held by top 50 holders
-- `top100Concentration`: % held by top 100 holders
-- `holders`: Array of top holders:
-  - `rank`: Holder rank
-  - `address`: Wallet address
-  - `balance`: Token balance (UI units)
-  - `percentage`: % of total supply
-  - `value`: USD value of holdings
-  - `isContract`: Whether address is a contract
-  - `tag`: Address tag (e.g., "DEX", "CEX", "Team")
-
-### Notes
-
-- High concentration = higher manipulation risk
-- Contract holders may be liquidity pools
-- Use for risk assessment
-
----
-
-## Usage Examples
-
-**User says:** "Find PEPE token"
+**User says:** "Search for xETH token on XLayer"
 
 ```bash
-opentrade token search PEPE
-# → Display: Multiple PEPE tokens found across chains
-#   1. PEPE on Ethereum (0x6982508145454ce325ddbe47a25d4ec3d2311933)
-#   2. PEPE on Base (0x...)
-#   ...
-```
-
-**User says:** "Show me BONK details"
-
-```bash
-# First search
-opentrade token search BONK --chains solana
-
-# Then get detailed info
-opentrade token price-info DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263 --chain solana
-# → Display: Price, volume, liquidity, market cap, holders, etc.
+opentrade token search xETH --chains xlayer
+# → Display:
+#   xETH (0xe7b0...) - XLayer
+#   Price: $X,XXX.XX | 24h: +X% | Market Cap: $XXM | Liquidity: $XXM
+#   Community Recognized: Yes
 ```
 
 **User says:** "What's trending on Solana by volume?"

@@ -456,7 +456,7 @@ opentrade gateway broadcast \
 - "Transaction broadcast successfully!"
 - "Order ID: 123456789"
 - "Tx Hash: 0xabc123def456..."
-- "Track status with: opentrade gateway orders --order-id 123456789"
+- "Track status with: opentrade gateway orders --address <wallet_address> --chain <chain_name> --order-id 123456789"
 
 ---
 

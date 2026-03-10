@@ -362,24 +362,27 @@ opentrade swap quote --from <address> --to <address> --amount <amount> --chain <
 
 | Field | Type | Description |
 |---|---|---|
-| `fromToken.symbol` | String | Source token symbol |
-| `fromToken.decimals` | Number | Source token decimals |
-| `fromToken.isHoneyPot` | Boolean | `true` = honeypot (cannot sell) |
-| `fromToken.taxRate` | String | Buy/sell tax rate |
-| `toToken.symbol` | String | Destination token symbol |
-| `toToken.decimals` | Number | Destination token decimals |
-| `toToken.isHoneyPot` | Boolean | `true` = honeypot |
-| `toToken.taxRate` | String | Buy/sell tax rate |
-| `estimateGasFee` | String | Estimated gas fee in native token minimal units |
+| `toTokenAmount` | String | Expected output amount in minimal units |
 | `fromTokenAmount` | String | Input amount in minimal units |
-| `toTokenAmount` | String | Output amount in minimal units |
-| `priceImpactPercentage` | String | Price impact as percentage |
-| `tradeFee` | String | Trade fee |
-| `routerResult.dexRouterList` | Array | Routing breakdown across DEXes |
+| `estimateGasFee` | String | Estimated gas fee (native token units) |
+| `tradeFee` | String | Trade fee estimate in USD |
+| `priceImpactPercent` | String | Price impact as percentage (e.g., `"0.05"`) |
+| `router` | String | Router type used |
+| `dexRouterList[]` | Array | DEX routing path details |
+| `dexRouterList[].dexName` | String | DEX name in the route |
+| `dexRouterList[].percentage` | String | Percentage of amount routed through this DEX |
+| `fromToken.isHoneyPot` | Boolean | `true` = source token is a honeypot (cannot sell) |
+| `fromToken.taxRate` | String | Source token buy/sell tax rate |
+| `fromToken.decimal` | String | Source token decimals |
+| `fromToken.tokenUnitPrice` | String | Source token unit price in USD |
+| `toToken.isHoneyPot` | Boolean | `true` = destination token is a honeypot (cannot sell) |
+| `toToken.taxRate` | String | Destination token buy/sell tax rate |
+| `toToken.decimal` | String | Destination token decimals |
+| `toToken.tokenUnitPrice` | String | Destination token unit price in USD |
 
 ### 5. opentrade swap swap
 
-Get swap transaction data.
+Get swap transaction data (quote → sign → broadcast).
 
 ```bash
 opentrade swap swap --from <address> --to <address> --amount <amount> --chain <chain> --wallet <address> [--slippage <pct>] [--swap-mode <mode>]
@@ -391,25 +394,24 @@ opentrade swap swap --from <address> --to <address> --amount <amount> --chain <c
 | `--to` | Yes | - | Destination token contract address |
 | `--amount` | Yes | - | Amount in minimal units |
 | `--chain` | Yes | - | Chain name |
-| `--wallet` | Yes | - | User wallet address |
-| `--slippage` | No | `1` | Slippage tolerance in percent (`0.01`–`50`) |
-| `--swap-mode` | No | `exactIn` | `exactIn` or `exactOut` |
+| `--wallet` | Yes | - | User's wallet address |
+| `--slippage` | No | `"1"` | Slippage tolerance in percent (e.g., `"1"` for 1%) |
+| `--swap-mode` | No | `"exactIn"` | `exactIn` or `exactOut` |
 
-**Return fields (EVM)**:
-
-| Field | Type | Description |
-|---|---|---|
-| `tx.to` | String | Contract address to call |
-| `tx.data` | String | Transaction calldata (hex) |
-| `tx.value` | String | Native token value to send (minimal units) |
-| `tx.gas` | String | Gas limit |
-
-**Return fields (Solana)**:
+**Return fields**:
 
 | Field | Type | Description |
 |---|---|---|
-| `tx.data` | String | Base64-encoded transaction |
-| `tx.signers` | Array | Wallet addresses that must sign |
+| `routerResult` | Object | Same structure as quote return (see swap quote above) |
+| `tx.from` | String | Sender address |
+| `tx.to` | String | Contract address to send the transaction to |
+| `tx.data` | String | Transaction calldata (hex for EVM, base58 for Solana) |
+| `tx.gas` | String | Gas limit for the transaction |
+| `tx.gasPrice` | String | Gas price |
+| `tx.value` | String | Native token value to send (in minimal units) |
+| `tx.minReceiveAmount` | String | Minimum receive amount after slippage (minimal units) |
+| `tx.maxSpendAmount` | String | Maximum spend amount (for exactOut mode) |
+| `tx.slippagePercent` | String | Applied slippage tolerance percentage |
 
 ## Input / Output Examples
 

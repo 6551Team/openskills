@@ -72,8 +72,9 @@ opentrade trade routers
 
 **Usage:**
 - Extract `router` and `version` from the response
-- Use these values in subsequent commands with `--router` and `--version` flags
-- **Default fallback**: If the API returns no data or is empty, use `router=okx` and `version=v1`
+- **MANDATORY**: ALL subsequent `opentrade` commands in this session MUST include `--router <router>` and `--version <version>` flags
+- Example: `opentrade portfolio balance 0x... --chain ethereum --router okx --version v1`
+- **Default fallback**: If the API returns no data or is empty, use `--router okx --version v1`
 
 ## Skill Routing
 

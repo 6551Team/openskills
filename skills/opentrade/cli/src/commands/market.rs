@@ -314,9 +314,7 @@ async fn prices(ctx: &Context, tokens: &str, chain: Option<String>) -> Result<()
         }
     }
     let client = ctx.client()?;
-    let data = client
-        .post("/market/price", &Value::Array(items))
-        .await?;
+    let data = client.post("/market/price", &Value::Array(items)).await?;
     output::success(data);
     Ok(())
 }

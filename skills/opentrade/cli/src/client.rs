@@ -13,15 +13,11 @@ pub struct ApiClient {
 }
 
 impl ApiClient {
-    pub fn new(
-        base_url_override: Option<&str>,
-        trader: &str,
-        version: &str,
-    ) -> Result<Self> {
+    pub fn new(base_url_override: Option<&str>, trader: &str, version: &str) -> Result<Self> {
         let token = std::env::var("OPEN_TOKEN").context(
             "OPEN_TOKEN not set. Get your token at https://6551.io/mcp and set it via:\n\
              export OPEN_TOKEN=\"your-token\"\n\
-             Or create ~/.config/openskills/credentials.json with {\"token\": \"your-token\"}"
+             Or create ~/.config/openskills/credentials.json with {\"token\": \"your-token\"}",
         )?;
 
         let base_url = base_url_override
@@ -59,11 +55,14 @@ impl ApiClient {
         };
 
         // Build URL with trader and version: /open/trader/{trader}/{version}{path}
-        let request_path = format!("/open/trader/{}/{}{}{}",
-            self.trader, self.version, path, query_string);
+        let request_path = format!(
+            "/open/trader/{}/{}{}{}",
+            self.trader, self.version, path, query_string
+        );
         let url = format!("{}{}", self.base_url.trim_end_matches('/'), request_path);
 
-        let resp = self.http
+        let resp = self
+            .http
             .get(&url)
             .header("Authorization", format!("Bearer {}", self.token))
             .header("Content-Type", "application/json")
@@ -82,7 +81,8 @@ impl ApiClient {
         let request_path = format!("/open/trader/{}/{}{}", self.trader, self.version, path);
         let url = format!("{}{}", self.base_url.trim_end_matches('/'), request_path);
 
-        let resp = self.http
+        let resp = self
+            .http
             .post(&url)
             .header("Authorization", format!("Bearer {}", self.token))
             .header("Content-Type", "application/json")
@@ -101,7 +101,8 @@ impl ApiClient {
         let request_path = format!("/open/trader{}", path);
         let url = format!("{}{}", self.base_url.trim_end_matches('/'), request_path);
 
-        let resp = self.http
+        let resp = self
+            .http
             .get(&url)
             .header("Authorization", format!("Bearer {}", self.token))
             .header("Content-Type", "application/json")
@@ -126,7 +127,8 @@ impl ApiClient {
         // Check for code field
         if let Some(code) = body.get("code").and_then(|v| v.as_str()) {
             if code != "0" {
-                let msg = body.get("msg")
+                let msg = body
+                    .get("msg")
                     .or_else(|| body.get("message"))
                     .and_then(|v| v.as_str())
                     .unwrap_or("unknown error");

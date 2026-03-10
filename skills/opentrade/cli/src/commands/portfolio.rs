@@ -76,9 +76,7 @@ pub async fn execute(ctx: &Context, cmd: PortfolioCommand) -> Result<()> {
 /// GET /trader/{router}/{version}/balance/supported/chain
 async fn chains(ctx: &Context) -> Result<()> {
     let client = ctx.client()?;
-    let data = client
-        .get("/balance/chains", &[])
-        .await?;
+    let data = client.get("/balance/chains", &[]).await?;
     output::success(data);
     Ok(())
 }

@@ -121,10 +121,7 @@ async fn gas(ctx: &Context, chain: &str) -> Result<()> {
     let chain_index = crate::chains::resolve_chain(chain);
     let client = ctx.client()?;
     let data = client
-        .get(
-            "/gateway/gas",
-            &[("chainIndex", chain_index.as_str())],
-        )
+        .get("/gateway/gas", &[("chainIndex", chain_index.as_str())])
         .await?;
     output::success(data);
     Ok(())

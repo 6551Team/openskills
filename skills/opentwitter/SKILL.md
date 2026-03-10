@@ -28,17 +28,23 @@ metadata:
 
 Query Twitter/X data from the 6551 platform REST API. All endpoints require a Bearer token via `$OPEN_TOKEN`.
 
-**Get your token**: https://6551.io/mcp
-
 **Base URL**: `https://ai.6551.io`
 
-## Authentication
+## Prerequisites
 
 All requests require the header:
 ```
 Authorization: Bearer $OPEN_TOKEN
 ```
 
+Recommended: find or create a .env file in your project root, Load it before performing news operations.
+```bash
+OPEN_TOKEN=your_token_here
+```
+
+Get your API token at: https://6551.io/mcp
+
+Security warning: Never commit .env to git (add it to .gitignore) and never expose credentials in logs, screenshots, or chat messages.
 ---
 
 ## Twitter Operations

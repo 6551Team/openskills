@@ -1,101 +1,71 @@
 ---
-name: opentrade-portfolio
-description: "This skill should be used when the user asks to 'check my wallet balance', 'show my token holdings', 'how much OKB do I have', 'what tokens do I have', 'check my portfolio value', 'view my assets', 'how much is my portfolio worth', 'what's in my wallet', or mentions checking wallet balance, total assets, token holdings, portfolio value, remaining funds, DeFi positions, or multi-chain balance lookup. Supports XLayer, Solana, Ethereum, Base, BSC, Arbitrum, Polygon, and 20+ other chains. Do NOT use for general programming questions about balance variables or API documentation. Do NOT use when the user is asking how to build or integrate a balance feature into code."
+name: okx-wallet-portfolio
+description: "This skill should be used when the user asks to 'check my wallet balance', 'show my token holdings', 'how much OKB do I have', 'what tokens do I have', 'check my portfolio value', 'view my assets', 'how much is my portfolio worth', 'what\\'s in my wallet', or mentions checking wallet balance, total assets, token holdings, portfolio value, remaining funds, DeFi positions, or multi-chain balance lookup. Supports XLayer, Solana, Ethereum, Base, BSC, Arbitrum, Polygon, and 20+ other chains. Do NOT use for general programming questions about balance variables or API documentation. Do NOT use when the user is asking how to build or integrate a balance feature into code."
 license: Apache-2.0
 metadata:
-  author: 6551
+  author: okx
   version: "1.0.1"
-  homepage: "https://6551.io"
+  homepage: "https://web3.okx.com"
 ---
 
-# OpenTrade Portfolio CLI
+# OKX Wallet Portfolio CLI
 
 4 commands for supported chains, wallet total value, all token balances, and specific token balances.
 
 ## Pre-flight Checks
 
-Every time before running any `opentrade` command, always follow these steps in order. Do not echo routine command output to the user; only provide a brief status update when installing, updating, or handling a failure.
+Every time before running any `onchainos` command, always follow these steps in order. Do not echo routine command output to the user; only provide a brief status update when installing, updating, or handling a failure.
 
-1. **Confirm installed**: Run `which opentrade`. If not found, install it:
+1. **Confirm installed**: Run `which onchainos`. If not found, install it:
    ```bash
-   curl -sSL https://raw.githubusercontent.com/6551/openskills/main/install.sh | sh
+   curl -sSL https://raw.githubusercontent.com/okx/onchainos-skills/main/install.sh | sh
    ```
-   If the install script fails, ask the user to install manually following the instructions at: https://github.com/6551/openskills
+   If the install script fails, ask the user to install manually following the instructions at: https://github.com/okx/onchainos-skills
 
-2. **Check for updates**: Read `~/.opentrade/last_check` and compare it with the current timestamp:
+2. **Check for updates**: Read `~/.onchainos/last_check` and compare it with the current timestamp:
    ```bash
-   cached_ts=$(cat ~/.opentrade/last_check 2>/dev/null || true)
+   cached_ts=$(cat ~/.onchainos/last_check 2>/dev/null || true)
    now=$(date +%s)
    ```
    - If `cached_ts` is non-empty and `(now - cached_ts) < 43200` (12 hours), skip the update and proceed.
    - Otherwise (file missing or older than 12 hours), run the installer to check for updates:
      ```bash
-     curl -sSL https://raw.githubusercontent.com/6551/openskills/main/install.sh | sh
+     curl -sSL https://raw.githubusercontent.com/okx/onchainos-skills/main/install.sh | sh
      ```
-     If a newer version is installed, tell the user and suggest updating their opentrade skills from https://github.com/6551/openskills to get the latest features.
-3. If any `opentrade` command fails with an unexpected error during this
+     If a newer version is installed, tell the user and suggest updating their onchainos skills from https://github.com/okx/onchainos-skills to get the latest features.
+3. If any `onchainos` command fails with an unexpected error during this
    session, try reinstalling before giving up:
    ```bash
-   curl -sSL https://raw.githubusercontent.com/6551/openskills/main/install.sh | sh
+   curl -sSL https://raw.githubusercontent.com/okx/onchainos-skills/main/install.sh | sh
    ```
 4. Create a `.env` file in the project root to override the default API credentials (optional — skip this for quick start):
    ```
-   OPEN_TOKEN=your_token_here
+   OKX_API_KEY=
+   OKX_SECRET_KEY=
+   OKX_PASSPHRASE=
    ```
-   Get your API token at: https://6551.io/mcp
-
-## Router Discovery
-
-**IMPORTANT**: If the user has not specified a trading router, you MUST first discover available routers:
-
-```bash
-opentrade trade routers
-```
-
-**Response format:**
-```json
-{
-  "data": [
-    {
-      "name": "okx test",
-      "router": "okx",
-      "version": "v1",
-      "quota_reward": 0,
-      "is_active": true,
-      "created_at": "2026-03-03 21:24:34",
-      "updated_at": "2026-03-03 21:24:34"
-    }
-  ],
-  "success": true
-}
-```
-
-**Usage:**
-- Extract `router` and `version` from the response
-- Use these values in subsequent commands with `--router` and `--version` flags
-- **Default fallback**: If the API returns no data or is empty, use `router=okx` and `version=v1`
 
 ## Skill Routing
 
-- For token prices / K-lines → use `opentrade-market`
-- For token search / metadata → use `opentrade-token`
-- For swap execution → use `opentrade-dex-swap`
-- For transaction broadcasting → use `opentrade-gateway`
+- For token prices / K-lines → use `okx-dex-market`
+- For token search / metadata → use `okx-dex-token`
+- For swap execution → use `okx-dex-swap`
+- For transaction broadcasting → use `okx-onchain-gateway`
 
 ## Quickstart
 
 ```bash
 # Get supported chains for balance queries
-opentrade portfolio chains --router okx --version v1
+onchainos portfolio chains
 
 # Get total asset value on XLayer and Solana
-opentrade portfolio total-value --address 0xYourWallet --chains "xlayer,solana" --router okx --version v1
+onchainos portfolio total-value --address 0xYourWallet --chains "xlayer,solana"
 
 # Get all token balances
-opentrade portfolio all-balances --address 0xYourWallet --chains "xlayer,solana,ethereum" --router okx --version v1
+onchainos portfolio all-balances --address 0xYourWallet --chains "xlayer,solana,ethereum"
 
 # Check specific tokens (native OKB + USDC on XLayer)
-opentrade portfolio token-balances --address 0xYourWallet --tokens "196:,196:0x74b7f16337b8972027f6196a17a631ac6de26d22" --router okx --version v1
+onchainos portfolio token-balances --address 0xYourWallet --tokens "196:,196:0x74b7f16337b8972027f6196a17a631ac6de26d22"
 ```
 
 ## Chain Name Support
@@ -110,21 +80,6 @@ The CLI accepts human-readable chain names and resolves them automatically.
 | Base | `base` | `8453` |
 | BSC | `bsc` | `56` |
 | Arbitrum | `arbitrum` | `42161` |
-| Polygon | `polygon` | `137` |
-| Optimism | `optimism` | `10` |
-| Avalanche | `avalanche` | `43114` |
-| Fantom | `fantom` | `250` |
-| Cronos | `cronos` | `25` |
-| Gnosis | `gnosis` | `100` |
-| Moonbeam | `moonbeam` | `1284` |
-| Moonriver | `moonriver` | `1285` |
-| Celo | `celo` | `42220` |
-| Aurora | `aurora` | `1313161554` |
-| Harmony | `harmony` | `1666600000` |
-| Boba | `boba` | `288` |
-| Metis | `metis` | `1088` |
-| Klaytn | `klaytn` | `8217` |
-| Fuse | `fuse` | `122` |
 
 **Address format note**: EVM addresses (`0x...`) work across Ethereum/BSC/Polygon/Arbitrum/Base etc. Solana addresses (Base58) and Bitcoin addresses (UTXO) have different formats. Do NOT mix formats across chain types.
 
@@ -132,10 +87,10 @@ The CLI accepts human-readable chain names and resolves them automatically.
 
 | # | Command | Description |
 |---|---|---|
-| 1 | `opentrade portfolio chains` | Get supported chains for balance queries |
-| 2 | `opentrade portfolio total-value --address ... --chains ...` | Get total asset value for a wallet |
-| 3 | `opentrade portfolio all-balances --address ... --chains ...` | Get all token balances for a wallet |
-| 4 | `opentrade portfolio token-balances --address ... --tokens ...` | Get specific token balances |
+| 1 | `onchainos portfolio chains` | Get supported chains for balance queries |
+| 2 | `onchainos portfolio total-value --address ... --chains ...` | Get total asset value for a wallet |
+| 3 | `onchainos portfolio all-balances --address ... --chains ...` | Get all token balances for a wallet |
+| 4 | `onchainos portfolio token-balances --address ... --tokens ...` | Get specific token balances |
 
 ## Cross-Skill Workflows
 
@@ -146,13 +101,13 @@ This skill is often used **before swap** (to verify sufficient balance) or **as 
 > User: "Swap 1 SOL for BONK"
 
 ```
-1. opentrade-token    opentrade token search BONK --chains solana --router okx --version v1
+1. okx-dex-token    onchainos token search BONK --chains solana               → get tokenContractAddress
        ↓ tokenContractAddress
-2. opentrade-portfolio  opentrade portfolio all-balances --address <addr> --chains solana --router okx --version v1
+2. okx-wallet-portfolio  onchainos portfolio all-balances --address <addr> --chains solana
        → verify SOL balance >= 1
        ↓ balance field (UI units) → convert to minimal units for swap
-3. opentrade-dex-swap     opentrade swap quote --from 11111111111111111111111111111111 --to <BONK_address> --amount 1000000000 --chain solana --router okx --version v1
-4. opentrade-dex-swap     opentrade swap swap --from ... --to <BONK_address> --amount 1000000000 --chain solana --wallet <addr> --router okx --version v1
+3. okx-dex-swap     onchainos swap quote --from 11111111111111111111111111111111 --to <BONK_address> --amount 1000000000 --chain solana
+4. okx-dex-swap     onchainos swap swap --from ... --to <BONK_address> --amount 1000000000 --chain solana --wallet <addr>
 ```
 
 **Data handoff**:
@@ -165,24 +120,24 @@ This skill is often used **before swap** (to verify sufficient balance) or **as 
 > User: "Show my portfolio"
 
 ```
-1. opentrade-portfolio  opentrade portfolio total-value --address <addr> --chains "xlayer,solana,ethereum" --router okx --version v1
+1. okx-wallet-portfolio  onchainos portfolio total-value --address <addr> --chains "xlayer,solana,ethereum"
        → total USD value
-2. opentrade-portfolio  opentrade portfolio all-balances --address <addr> --chains "xlayer,solana,ethereum" --router okx --version v1
+2. okx-wallet-portfolio  onchainos portfolio all-balances --address <addr> --chains "xlayer,solana,ethereum"
        → per-token breakdown
        ↓ top holdings by USD value
-3. opentrade-token    opentrade token price-info <address> --chain <chain> --router okx --version v1  → enrich with 24h change, market cap
-4. opentrade-market   opentrade market kline <address> --chain <chain> --router okx --version v1      → price charts for tokens of interest
+3. okx-dex-token    onchainos token price-info <address> --chain <chain>  → enrich with 24h change, market cap
+4. okx-dex-market   onchainos market kline <address> --chain <chain>      → price charts for tokens of interest
 ```
 
 ### Workflow C: Sell Underperforming Tokens
 
 ```
-1. opentrade-portfolio  opentrade portfolio all-balances --address <addr> --chains "xlayer,solana,ethereum" --router okx --version v1
+1. okx-wallet-portfolio  onchainos portfolio all-balances --address <addr> --chains "xlayer,solana,ethereum"
        → list all holdings
        ↓ tokenContractAddress + chainIndex for each
-2. opentrade-token    opentrade token price-info <address> --chain <chain> --router okx --version v1  → get priceChange24H per token
+2. okx-dex-token    onchainos token price-info <address> --chain <chain>  → get priceChange24H per token
 3. Filter by negative change → user confirms which to sell
-4. opentrade-dex-swap     opentrade swap quote → opentrade swap swap → execute sell
+4. okx-dex-swap     onchainos swap quote → onchainos swap swap → execute sell
 ```
 
 **Key conversion**: `balance` (UI units) × `10^decimal` = `amount` (minimal units) for swap.
@@ -191,10 +146,10 @@ This skill is often used **before swap** (to verify sufficient balance) or **as 
 
 ### Step 1: Identify Intent
 
-- Check total assets → `opentrade portfolio total-value`
-- View all token holdings → `opentrade portfolio all-balances`
-- Check specific token balance → `opentrade portfolio token-balances`
-- Unsure which chains are supported → `opentrade portfolio chains` first
+- Check total assets → `onchainos portfolio total-value`
+- View all token holdings → `onchainos portfolio all-balances`
+- Check specific token balance → `onchainos portfolio token-balances`
+- Unsure which chains are supported → `onchainos portfolio chains` first
 
 ### Step 2: Collect Parameters
 
@@ -214,49 +169,43 @@ After displaying results, suggest 2-3 relevant follow-up actions:
 
 | Just completed | Suggest |
 |---|---|
-| `portfolio total-value` | 1. View token-level breakdown → `opentrade portfolio all-balances` (this skill) 2. Check price trend for top holdings → `opentrade-market` |
-| `portfolio all-balances` | 1. View detailed analytics (market cap, 24h change) for a token → `opentrade-token` 2. Swap a token → `opentrade-dex-swap` 3. View price chart for a token → `opentrade-market` |
-| `portfolio token-balances` | 1. View full portfolio across all tokens → `opentrade portfolio all-balances` (this skill) 2. Swap this token → `opentrade-dex-swap` |
+| `portfolio total-value` | 1. View token-level breakdown → `onchainos portfolio all-balances` (this skill) 2. Check price trend for top holdings → `okx-dex-market` |
+| `portfolio all-balances` | 1. View detailed analytics (market cap, 24h change) for a token → `okx-dex-token` 2. Swap a token → `okx-dex-swap` 3. View price chart for a token → `okx-dex-market` |
+| `portfolio token-balances` | 1. View full portfolio across all tokens → `onchainos portfolio all-balances` (this skill) 2. Swap this token → `okx-dex-swap` |
 
 Present conversationally, e.g.: "Would you like to see the price chart for your top holding, or swap any of these tokens?" — never expose skill names or endpoint paths to the user.
 
 ## CLI Command Reference
 
-### 1. opentrade portfolio chains
+### 1. onchainos portfolio chains
 
 Get supported chains for balance queries. No parameters required.
 
 ```bash
-opentrade portfolio chains --router okx --version v1
+onchainos portfolio chains
 ```
 
 **Return fields**:
 
 | Field | Type | Description |
 |---|---|---|
+| `name` | String | Chain name (e.g., `"XLayer"`) |
+| `logoUrl` | String | Chain logo URL |
+| `shortName` | String | Chain short name (e.g., `"OKB"`) |
 | `chainIndex` | String | Chain unique identifier (e.g., `"196"`) |
-| `chainName` | String | Chain name (e.g., `"XLayer"`) |
 
-### 2. opentrade portfolio total-value
+### 2. onchainos portfolio total-value
 
 Get total asset value for a wallet address.
 
 ```bash
-opentrade portfolio total-value \
-  --address <address> \
-  --chains <chains> \
-  --router okx \
-  --version v1 \
-  [--asset-type <type>] \
-  [--exclude-risk <bool>]
+onchainos portfolio total-value --address <address> --chains <chains> [--asset-type <type>] [--exclude-risk <bool>]
 ```
 
 | Param | Required | Default | Description |
 |---|---|---|---|
 | `--address` | Yes | - | Wallet address |
 | `--chains` | Yes | - | Chain names or IDs, comma-separated (e.g., `"xlayer,solana"` or `"196,501"`) |
-| `--router` | Yes | - | Router name from router discovery |
-| `--version` | Yes | - | Router version from router discovery |
 | `--asset-type` | No | `"0"` | `0`=all, `1`=tokens only, `2`=DeFi only |
 | `--exclude-risk` | No | `true` | `true`=filter risky tokens, `false`=include. Only ETH/BSC/SOL/BASE |
 
@@ -266,76 +215,61 @@ opentrade portfolio total-value \
 |---|---|---|
 | `totalValue` | String | Total asset value in USD |
 
-### 3. opentrade portfolio all-balances
+### 3. onchainos portfolio all-balances
 
 Get all token balances for a wallet address.
 
 ```bash
-opentrade portfolio all-balances \
-  --address <address> \
-  --chains <chains> \
-  --router okx \
-  --version v1 \
-  [--exclude-risk <value>]
+onchainos portfolio all-balances --address <address> --chains <chains> [--exclude-risk <value>]
 ```
 
 | Param | Required | Default | Description |
 |---|---|---|---|
 | `--address` | Yes | - | Wallet address |
 | `--chains` | Yes | - | Chain names or IDs, comma-separated, max 50 |
-| `--router` | Yes | - | Router name from router discovery |
-| `--version` | Yes | - | Router version from router discovery |
 | `--exclude-risk` | No | `"0"` | `0`=filter out risky tokens (default), `1`=include. Only ETH/BSC/SOL/BASE |
 
-**Return fields** (per token in response):
+**Return fields** (per token in `tokenAssets[]`):
 
 | Field | Type | Description |
 |---|---|---|
 | `chainIndex` | String | Chain identifier |
-| `tokenAddress` | String | Token contract address |
-| `tokenSymbol` | String | Token symbol (e.g., `"OKB"`) |
-| `tokenName` | String | Token name |
-| `balance` | String | Token balance in base units (e.g., `"10500000000000000000"`) |
-| `decimals` | Number | Token decimals |
-| `priceUsd` | String | Token price in USD |
-| `valueUsd` | String | Token value in USD |
+| `tokenContractAddress` | String | Token contract address |
+| `symbol` | String | Token symbol (e.g., `"OKB"`) |
+| `balance` | String | Token balance in UI units (e.g., `"10.5"`) |
+| `rawBalance` | String | Token balance in base units (e.g., `"10500000000000000000"`) |
+| `tokenPrice` | String | Token price in USD |
+| `isRiskToken` | Boolean | `true` if flagged as risky |
 
-### 4. opentrade portfolio token-balances
+### 4. onchainos portfolio token-balances
 
 Get specific token balances for a wallet address.
 
 ```bash
-opentrade portfolio token-balances \
-  --address <address> \
-  --tokens <tokens> \
-  --router okx \
-  --version v1 \
-  [--exclude-risk <value>]
+onchainos portfolio token-balances --address <address> --tokens <tokens> [--exclude-risk <value>]
 ```
 
 | Param | Required | Default | Description |
 |---|---|---|---|
 | `--address` | Yes | - | Wallet address |
 | `--tokens` | Yes | - | Token list: `"chainIndex:tokenAddress"` pairs, comma-separated. Use empty address for native token (e.g., `"196:"` for native OKB). Max 20 items. |
-| `--router` | Yes | - | Router name from router discovery |
-| `--version` | Yes | - | Router version from router discovery |
 | `--exclude-risk` | No | `"0"` | `0`=filter out (default), `1`=include |
 
-**Return fields**: Same schema as `all-balances`.
+**Return fields**: Same schema as `all-balances` (`tokenAssets[]`).
 
 ## Input / Output Examples
 
 **User says:** "Check my wallet total assets on XLayer and Solana"
 
 ```bash
-opentrade portfolio total-value --address 0xYourWallet --chains "xlayer,solana" --router okx --version v1
+onchainos portfolio total-value --address 0xYourWallet --chains "xlayer,solana"
 # → Display: Total assets $12,345.67
 ```
 
 **User says:** "Show all tokens in my wallet"
 
 ```bash
-opentrade portfolio all-balances --address 0xYourWallet --chains "xlayer,solana,ethereum" --router okx --version v1
+onchainos portfolio all-balances --address 0xYourWallet --chains "xlayer,solana,ethereum"
 # → Display:
 #   OKB:  10.5 ($509.25)
 #   USDC: 2,000 ($2,000.00)
@@ -346,30 +280,27 @@ opentrade portfolio all-balances --address 0xYourWallet --chains "xlayer,solana,
 **User says:** "Only check USDC and native OKB balances on XLayer"
 
 ```bash
-opentrade portfolio token-balances --address 0xYourWallet --tokens "196:,196:0x74b7f16337b8972027f6196a17a631ac6de26d22" --router okx --version v1
+onchainos portfolio token-balances --address 0xYourWallet --tokens "196:,196:0x74b7f16337b8972027f6196a17a631ac6de26d22"
 # → Display: OKB: 10.5 ($509.25), USDC: 2,000 ($2,000.00)
 ```
 
 ## Edge Cases
 
 - **Zero balance**: valid state — display `$0.00`, not an error
-- **Unsupported chain**: call `opentrade portfolio chains` first to confirm
+- **Unsupported chain**: call `onchainos portfolio chains` first to confirm
 - **chains exceeds 50**: split into batches, max 50 per request
 - **`--exclude-risk` not working**: only supported on ETH/BSC/SOL/BASE
 - **DeFi positions**: use `--asset-type 2` to query DeFi holdings separately
 - **Address format mismatch**: EVM address on Solana chain will return empty data — do NOT mix
 - **Network error**: retry once, then prompt user to try again later
 - **Region restriction (error code 50125 or 80001)**: do NOT show the raw error code to the user. Instead, display a friendly message: `⚠️ Service is not available in your region. Please switch to a supported region and try again.`
-- **Max 20 tokens**: `token-balances` supports max 20 token entries in `--tokens` parameter
 
 ## Amount Display Rules
 
 - Token amounts in UI units (`1.5 ETH`), never base units (`1500000000000000000`)
-- USD values with 2 decimal places (`$1,234.56`)
-- Large amounts in shorthand (`$1.2M`, `$5.3K`)
-- Sort by USD value descending in portfolio view
-- Show percentage of total portfolio for each token
-- Highlight tokens with significant value (>1% of portfolio)
+- USD values with 2 decimal places
+- Large amounts in shorthand (`$1.2M`)
+- Sort by USD value descending
 
 ## Global Notes
 
@@ -378,10 +309,4 @@ opentrade portfolio token-balances --address 0xYourWallet --tokens "196:,196:0x7
 - `--exclude-risk` only works on ETH(`1`)/BSC(`56`)/SOL(`501`)/BASE(`8453`)
 - `token-balances` supports max **20** token entries
 - The CLI resolves chain names automatically (e.g., `ethereum` → `1`, `solana` → `501`)
-- The CLI handles authentication internally via environment variables — see Pre-flight Checks step 4
-- EVM contract addresses must be **all lowercase**
-- Native token (ETH, BNB, OKB, etc.) is represented with empty string in token format: `chainIndex:`
-- Balances are returned in minimal units (wei for EVM, lamports for Solana)
-- Values are calculated in USD based on current market prices
-- Get your API token at https://6551.io/mcp
-- Each request consumes 1 quota unit
+- The CLI handles authentication internally via environment variables — see Prerequisites step 4 for default values

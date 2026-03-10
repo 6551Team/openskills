@@ -4,7 +4,7 @@ description: "This skill should be used when the user asks to 'broadcast transac
 license: Apache-2.0
 metadata:
   author: 6551
-  version: "1.0.0"
+  version: "1.0.1"
   homepage: "https://6551.io"
 ---
 
@@ -44,17 +44,7 @@ Every time before running any `opentrade` command, always follow these steps in 
    ```
    Get your API token at: https://6551.io/mcp
 
-## Skill Routing
-
-- For swap quote and execution → use `opentrade-dex-swap`
-- For market prices → use `opentrade-market`
-- For token search → use `opentrade-token`
-- For wallet balances / portfolio → use `opentrade-portfolio`
-- For transaction broadcasting → use this skill (`opentrade-gateway`)
-
-## Quickstart
-
-### Router Discovery
+## Router Discovery
 
 **IMPORTANT**: If the user has not specified a trading router, you MUST first discover available routers:
 
@@ -85,23 +75,31 @@ opentrade trade routers
 - Use these values in subsequent commands with `--router` and `--version` flags
 - **Default fallback**: If the API returns no data or is empty, use `router=okx` and `version=v1`
 
-### Basic Commands
+## Skill Routing
+
+- For swap quote and execution → use `opentrade-dex-swap`
+- For market prices → use `opentrade-market`
+- For token search → use `opentrade-token`
+- For wallet balances / portfolio → use `opentrade-portfolio`
+- For transaction broadcasting → use this skill (`opentrade-gateway`)
+
+## Quickstart
 
 ```bash
 # Get current gas price on XLayer
-opentrade gateway gas --chain xlayer --router okx --version v1
+opentrade gateway gas --chain xlayer
 
 # Estimate gas limit for a transaction
-opentrade gateway gas-limit --from 0xYourWallet --to 0xRecipient --chain xlayer --router okx --version v1
+opentrade gateway gas-limit --from 0xYourWallet --to 0xRecipient --chain xlayer
 
 # Simulate a transaction (dry-run)
-opentrade gateway simulate --from 0xYourWallet --to 0xContract --data 0x... --chain xlayer --router okx --version v1
+opentrade gateway simulate --from 0xYourWallet --to 0xContract --data 0x... --chain xlayer
 
 # Broadcast a signed transaction
-opentrade gateway broadcast --signed-tx 0xf86c...signed --address 0xYourWallet --chain xlayer --router okx --version v1
+opentrade gateway broadcast --signed-tx 0xf86c...signed --address 0xYourWallet --chain xlayer
 
 # Track order status
-opentrade gateway orders --address 0xYourWallet --chain xlayer --order-id 123456789 --router okx --version v1
+opentrade gateway orders --address 0xYourWallet --chain xlayer --order-id 123456789
 ```
 
 ## Chain Name Support
@@ -110,75 +108,116 @@ The CLI accepts human-readable chain names and resolves them automatically.
 
 | Chain | Name | chainIndex |
 |---|---|---|
-| XLayer | `xlayer` | 196 |
-| Ethereum | `ethereum` | 1 |
-| Solana | `solana` | 501 |
-| Base | `base` | 8453 |
-| BSC | `bsc` | 56 |
-| Arbitrum | `arbitrum` | 42161 |
-| Polygon | `polygon` | 137 |
-| Optimism | `optimism` | 10 |
-| Avalanche | `avalanche` | 43114 |
-| Fantom | `fantom` | 250 |
-| zkSync Era | `zksync` | 324 |
-| Linea | `linea` | 59144 |
-| Scroll | `scroll` | 534352 |
-| Manta | `manta` | 169 |
-| Mantle | `mantle` | 5000 |
-| Blast | `blast` | 81457 |
-| Merlin | `merlin` | 4200 |
-| Mode | `mode` | 34443 |
-| Berachain | `berachain` | 80084 |
-| Taiko | `taiko` | 167000 |
-| Zircuit | `zircuit` | 48900 |
-| Ink | `ink` | 57073 |
-| Corn | `corn` | 21000000 |
-| Sonic | `sonic` | 146 |
-
-Use the chain name in the `--chain` flag (e.g., `--chain xlayer`).
+| XLayer | `xlayer` | `196` |
+| Solana | `solana` | `501` |
+| Ethereum | `ethereum` | `1` |
+| Base | `base` | `8453` |
+| BSC | `bsc` | `56` |
+| Arbitrum | `arbitrum` | `42161` |
 
 ## Command Index
 
-| Command | Description |
-|---|---|
-| `opentrade trade routers` | Discover available trading routers |
-| `opentrade gateway gas` | Get current gas price |
-| `opentrade gateway gas-limit` | Estimate gas limit for a transaction |
-| `opentrade gateway simulate` | Simulate transaction execution (dry-run) |
-| `opentrade gateway broadcast` | Broadcast a signed transaction |
-| `opentrade gateway orders` | Query order status by order ID |
+| # | Command | Description |
+|---|---|---|
+| 1 | `opentrade gateway chains` | Get supported chains for gateway |
+| 2 | `opentrade gateway gas --chain <chain>` | Get current gas prices for a chain |
+| 3 | `opentrade gateway gas-limit --from ... --to ... --chain ...` | Estimate gas limit for a transaction |
+| 4 | `opentrade gateway simulate --from ... --to ... --data ... --chain ...` | Simulate a transaction (dry-run) |
+| 5 | `opentrade gateway broadcast --signed-tx ... --address ... --chain ...` | Broadcast a signed transaction |
+| 6 | `opentrade gateway orders --address ... --chain ...` | Track broadcast order status |
+
+## Cross-Skill Workflows
+
+This skill is the **final mile** — it takes a signed transaction and sends it on-chain. It pairs with swap (to get tx data).
+
+### Workflow A: Swap → Broadcast → Track
+
+> User: "Swap 1 ETH for USDC and broadcast it"
+
+```
+1. opentrade-dex-swap     opentrade swap swap --from ... --to ... --amount ... --chain ethereum --wallet <addr>
+       ↓ user signs the tx locally
+2. opentrade-gateway  opentrade gateway broadcast --signed-tx <signed_hex> --address <addr> --chain ethereum
+       ↓ orderId returned
+3. opentrade-gateway  opentrade gateway orders --address <addr> --chain ethereum --order-id <orderId>
+```
+
+**Data handoff**:
+- `tx.data`, `tx.to`, `tx.value`, `tx.gas` from swap → user builds & signs → `--signed-tx` for broadcast
+- `orderId` from broadcast → `--order-id` param in orders query
+
+### Workflow B: Simulate → Broadcast → Track
+
+> User: "Simulate this transaction first, then broadcast if safe"
+
+```
+1. opentrade gateway simulate --from 0xWallet --to 0xContract --data 0x... --chain ethereum
+       ↓ simulation passes (no revert)
+2. opentrade gateway broadcast --signed-tx <signed_hex> --address 0xWallet --chain ethereum
+3. opentrade gateway orders --address 0xWallet --chain ethereum --order-id <orderId>
+```
+
+### Workflow C: Gas Check → Swap → Broadcast
+
+> User: "Check gas, swap for USDC, then send it"
+
+```
+1. opentrade gateway gas --chain ethereum                                    → check gas prices
+2. opentrade-dex-swap     opentrade swap swap --from ... --to ... --chain ethereum --wallet <addr>
+       ↓ user signs
+3. opentrade gateway broadcast --signed-tx <signed_hex> --address <addr> --chain ethereum
+4. opentrade gateway orders --address <addr> --chain ethereum --order-id <orderId>
+```
+
+## Operation Flow
+
+### Step 1: Identify Intent
+
+- Estimate gas for a chain → `opentrade gateway gas`
+- Estimate gas limit for a specific tx → `opentrade gateway gas-limit`
+- Test if a tx will succeed → `opentrade gateway simulate`
+- Broadcast a signed tx → `opentrade gateway broadcast`
+- Track a broadcast order → `opentrade gateway orders`
+- Check supported chains → `opentrade gateway chains`
+
+### Step 2: Collect Parameters
+
+- Missing chain → recommend XLayer (`--chain xlayer`, low gas, fast confirmation) as the default, then ask which chain the user prefers
+- Missing `--signed-tx` → remind user to sign the transaction first (this CLI does NOT sign)
+- Missing wallet address → ask user
+
+### Step 3: Execute & Display
+
+- Run the command
+- Parse JSON output
+- Display human-readable summary (see each command section below)
 
 ---
 
-## 1. Router Discovery
+## 1. Supported Chains
 
-Discover available trading routers for the authenticated user.
+List all chains supported by the gateway.
 
 ```bash
-opentrade trade routers
+opentrade gateway chains
 ```
 
 **Output:**
 ```json
 {
+  "code": "0",
   "data": [
-    {
-      "name": "okx test",
-      "router": "okx",
-      "version": "v1",
-      "quota_reward": 0,
-      "is_active": true,
-      "created_at": "2026-03-03 21:24:34",
-      "updated_at": "2026-03-03 21:24:34"
-    }
+    { "chainId": "196", "chainName": "XLayer" },
+    { "chainId": "1", "chainName": "Ethereum" },
+    { "chainId": "501", "chainName": "Solana" }
   ],
-  "success": true
+  "msg": ""
 }
 ```
 
-**Usage:**
-- Use `router` and `version` values in subsequent commands
-- If no routers are returned, use default: `router=okx`, `version=v1`
+**Display to user:**
+- List chain names with IDs
+- Highlight commonly used chains
 
 ---
 
@@ -187,17 +226,15 @@ opentrade trade routers
 Get current gas price for a specific chain.
 
 ```bash
-opentrade gateway gas --chain <chain_name> --router <router> --version <version>
+opentrade gateway gas --chain <chain_name>
 ```
 
 **Parameters:**
 - `--chain`: Chain name (e.g., `xlayer`, `ethereum`, `solana`)
-- `--router`: Router name from router discovery (default: `okx`)
-- `--version`: Router version from router discovery (default: `v1`)
 
 **Example:**
 ```bash
-opentrade gateway gas --chain xlayer --router okx --version v1
+opentrade gateway gas --chain xlayer
 ```
 
 **Output:**
@@ -207,6 +244,10 @@ opentrade gateway gas --chain xlayer --router okx --version v1
   "data": [
     {
       "chainId": "196",
+      "eip1559Protocol": {
+        "suggestBaseFee": "100000000",
+        "proposePriorityFee": "0"
+      },
       "normal": {
         "maxFeePerGas": "100000000",
         "baseFee": "100000000",
@@ -247,8 +288,6 @@ opentrade gateway gas-limit \
   --from <sender_address> \
   --to <recipient_address> \
   --chain <chain_name> \
-  --router <router> \
-  --version <version> \
   [--value <amount_in_wei>] \
   [--data <hex_data>]
 ```
@@ -257,8 +296,6 @@ opentrade gateway gas-limit \
 - `--from`: Sender wallet address (required)
 - `--to`: Recipient address (required)
 - `--chain`: Chain name (required)
-- `--router`: Router name (default: `okx`)
-- `--version`: Router version (default: `v1`)
 - `--value`: Amount to send in wei (optional, default: `0`)
 - `--data`: Transaction data in hex format (optional, default: `0x`)
 
@@ -268,8 +305,6 @@ opentrade gateway gas-limit \
   --from 0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb \
   --to 0x1234567890abcdef1234567890abcdef12345678 \
   --chain xlayer \
-  --router okx \
-  --version v1 \
   --value 1000000000000000000
 ```
 
@@ -302,8 +337,6 @@ opentrade gateway simulate \
   --from <sender_address> \
   --to <recipient_address> \
   --chain <chain_name> \
-  --router <router> \
-  --version <version> \
   [--value <amount_in_wei>] \
   [--data <hex_data>] \
   [--gas-limit <limit>] \
@@ -314,8 +347,6 @@ opentrade gateway simulate \
 - `--from`: Sender wallet address (required)
 - `--to`: Recipient address (required)
 - `--chain`: Chain name (required)
-- `--router`: Router name (default: `okx`)
-- `--version`: Router version (default: `v1`)
 - `--value`: Amount to send in wei (optional, default: `0`)
 - `--data`: Transaction data in hex format (optional, default: `0x`)
 - `--gas-limit`: Gas limit (optional)
@@ -327,8 +358,6 @@ opentrade gateway simulate \
   --from 0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb \
   --to 0x1234567890abcdef1234567890abcdef12345678 \
   --chain xlayer \
-  --router okx \
-  --version v1 \
   --value 1000000000000000000 \
   --gas-limit 21000 \
   --gas-price 100000000
@@ -384,26 +413,20 @@ Broadcast a signed transaction to the blockchain.
 opentrade gateway broadcast \
   --signed-tx <signed_transaction_hex> \
   --address <sender_address> \
-  --chain <chain_name> \
-  --router <router> \
-  --version <version>
+  --chain <chain_name>
 ```
 
 **Parameters:**
 - `--signed-tx`: Signed transaction in hex format (EVM) or base58 (Solana) (required)
 - `--address`: Sender wallet address (required)
 - `--chain`: Chain name (required)
-- `--router`: Router name (default: `okx`)
-- `--version`: Router version (default: `v1`)
 
 **Example (EVM):**
 ```bash
 opentrade gateway broadcast \
   --signed-tx 0xf86c808504a817c800825208941234567890abcdef1234567890abcdef12345678880de0b6b3a764000080820a96a0... \
   --address 0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb \
-  --chain xlayer \
-  --router okx \
-  --version v1
+  --chain xlayer
 ```
 
 **Example (Solana):**
@@ -411,9 +434,7 @@ opentrade gateway broadcast \
 opentrade gateway broadcast \
   --signed-tx 4hXTCkRzt9WyecNzV1XPgCDfGAZzQKNxLXgynz5QDuWWPSAZBZSHptvWRL3BjCvzUXRdKvHL2b7yGrRQcWyaqsaBCncVG7BFggS8w9snUts67BSh3EqKpXLUm5UMHfD7ZBe9GhARjbNQMLJ1QD3Spr6oMTBU6EhdB4RD8CP2xUxr2u3d6fos36PD98XS6oX8TQjLpsMwncs5DAMiD4nNnR8NBfyghGCWvCVifVwvA8B8TJxE1aHwYbgByseGmZJYDUSi5McBJdm7f9YY9d8FU7XMWoLM1gCWmoL92aPQuGHafb \
   --address YourSolanaWalletAddress \
-  --chain solana \
-  --router okx \
-  --version v1
+  --chain solana
 ```
 
 **Output:**
@@ -446,26 +467,20 @@ Query the status of a broadcast transaction by order ID.
 opentrade gateway orders \
   --address <wallet_address> \
   --chain <chain_name> \
-  --order-id <order_id> \
-  --router <router> \
-  --version <version>
+  --order-id <order_id>
 ```
 
 **Parameters:**
 - `--address`: Wallet address (required)
 - `--chain`: Chain name (required)
 - `--order-id`: Order ID from broadcast response (required)
-- `--router`: Router name (default: `okx`)
-- `--version`: Router version (default: `v1`)
 
 **Example:**
 ```bash
 opentrade gateway orders \
   --address 0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb \
   --chain xlayer \
-  --order-id 123456789 \
-  --router okx \
-  --version v1
+  --order-id 123456789
 ```
 
 **Output:**
@@ -504,7 +519,7 @@ opentrade gateway orders \
 **User says:** "What's the gas price on XLayer?"
 
 ```bash
-opentrade gateway gas --chain xlayer --router okx --version v1
+opentrade gateway gas --chain xlayer
 # → Display: Normal: 0.1 Gwei, Fast: 0.1 Gwei, Slow: 0.1 Gwei
 ```
 
@@ -515,8 +530,6 @@ opentrade gateway gas-limit \
   --from 0xYourWallet \
   --to 0xRecipient \
   --chain ethereum \
-  --router okx \
-  --version v1 \
   --value 1000000000000000000
 # → Display: Gas limit: 21000, Estimated cost: ~0.002 ETH ($5.50)
 ```
@@ -528,8 +541,6 @@ opentrade gateway simulate \
   --from 0xYourWallet \
   --to 0xContract \
   --chain xlayer \
-  --router okx \
-  --version v1 \
   --data 0xa9059cbb... \
   --gas-limit 100000
 # → Display: Simulation successful! Gas used: 65432
@@ -541,29 +552,27 @@ opentrade gateway simulate \
 opentrade gateway broadcast \
   --signed-tx 0xf86c...signed \
   --address 0xYourWallet \
-  --chain xlayer \
-  --router okx \
-  --version v1
-# → Display: Transaction broadcast! Order ID: 123456789, Track status with Orders command
+  --chain xlayer
+# → Display:
+#   Transaction broadcast! Order ID: 123456789
+#   Tx Hash: 0xabc...def
 ```
 
-**User says:** "Check status of order 123456789"
+**User says:** "Check the status of my broadcast order"
 
 ```bash
-opentrade gateway orders \
-  --address 0xYourWallet \
-  --chain xlayer \
-  --order-id 123456789 \
-  --router okx \
-  --version v1
-# → Display: Status: confirmed, TxHash: 0xabc..., Block: 12345678
+opentrade gateway orders --address 0xYourWallet --chain xlayer --order-id 123456789
+# → Display:
+#   Order 123456789: Success (txStatus=2)
+#   Tx Hash: 0xabc...def
+#   Confirmed on-chain
 ```
 
 ## Edge Cases
 
 - **MEV protection**: Broadcasting through OpenTrade nodes may offer MEV protection on supported chains.
 - **Solana special handling**: Solana signed transactions use **base58** encoding (not hex). Ensure the `--signed-tx` format matches the chain.
-- **Chain not supported**: call `opentrade trade routers` first to verify.
+- **Chain not supported**: call `opentrade gateway chains` first to verify.
 - **Node return failed**: the underlying blockchain node rejected the transaction. Common causes: insufficient gas, nonce too low, contract revert. Retry with corrected parameters.
 - **Wallet type mismatch**: the address format does not match the chain (e.g., EVM address on Solana chain).
 - **Network error**: retry once, then prompt user to try again later
@@ -581,9 +590,7 @@ opentrade gateway orders \
 
 - **This skill does NOT sign transactions** — it only broadcasts pre-signed transactions
 - Amounts in parameters use **minimal units** (wei/lamports)
-- Gas price fields: use `normal` for most transactions, `fast` for urgent, `slow` for low priority
+- Gas price fields: use `eip1559Protocol.suggestBaseFee` + `proposePriorityFee` for EIP-1559 chains, `normal` for legacy
 - EVM contract addresses must be **all lowercase**
 - The CLI resolves chain names automatically (e.g., `ethereum` → `1`, `solana` → `501`)
-- The CLI handles authentication internally via environment variables — set `OPEN_TOKEN` in `.env` file or environment
-- Get your API token at: https://6551.io/mcp
-- Each request consumes 1 quota unit
+- The CLI handles authentication internally via environment variables — see Prerequisites step 4 for default values

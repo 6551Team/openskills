@@ -14,36 +14,66 @@ metadata:
 
 ## Pre-flight Checks
 
-Every time before running any `onchainos` command, always follow these steps in order. Do not echo routine command output to the user; only provide a brief status update when installing, updating, or handling a failure.
+Every time before running any `opentrade` command, always follow these steps in order. Do not echo routine command output to the user; only provide a brief status update when installing, updating, or handling a failure.
 
-1. **Confirm installed**: Run `which onchainos`. If not found, install it:
+1. **Confirm installed**: Run `which opentrade`. If not found, install it:
    ```bash
-   curl -sSL https://raw.githubusercontent.com/okx/onchainos-skills/main/install.sh | sh
+   curl -sSL https://raw.githubusercontent.com/6551/openskills/main/install.sh | sh
    ```
-   If the install script fails, ask the user to install manually following the instructions at: https://github.com/okx/onchainos-skills
+   If the install script fails, ask the user to install manually following the instructions at: https://github.com/6551/openskills
 
-2. **Check for updates**: Read `~/.onchainos/last_check` and compare it with the current timestamp:
+2. **Check for updates**: Read `~/.opentrade/last_check` and compare it with the current timestamp:
    ```bash
-   cached_ts=$(cat ~/.onchainos/last_check 2>/dev/null || true)
+   cached_ts=$(cat ~/.opentrade/last_check 2>/dev/null || true)
    now=$(date +%s)
    ```
    - If `cached_ts` is non-empty and `(now - cached_ts) < 43200` (12 hours), skip the update and proceed.
    - Otherwise (file missing or older than 12 hours), run the installer to check for updates:
      ```bash
-     curl -sSL https://raw.githubusercontent.com/okx/onchainos-skills/main/install.sh | sh
+     curl -sSL https://raw.githubusercontent.com/6551/openskills/main/install.sh | sh
      ```
-     If a newer version is installed, tell the user and suggest updating their onchainos skills from https://github.com/okx/onchainos-skills to get the latest features.
-3. If any `onchainos` command fails with an unexpected error during this
+     If a newer version is installed, tell the user and suggest updating their opentrade skills from https://github.com/6551/openskills to get the latest features.
+3. If any `opentrade` command fails with an unexpected error during this
    session, try reinstalling before giving up:
    ```bash
-   curl -sSL https://raw.githubusercontent.com/okx/onchainos-skills/main/install.sh | sh
+   curl -sSL https://raw.githubusercontent.com/6551/openskills/main/install.sh | sh
    ```
 4. Create a `.env` file in the project root to override the default API credentials (optional — skip this for quick start):
    ```
-   OKX_API_KEY=
-   OKX_SECRET_KEY=
-   OKX_PASSPHRASE=
+   OPEN_TOKEN=your_token_here
    ```
+   Get your API token at: https://6551.io/mcp
+
+## Router Discovery
+
+**IMPORTANT**: If the user has not specified a trading router, you MUST first discover available routers:
+
+```bash
+opentrade trade routers
+```
+
+**Response format:**
+```json
+{
+  "data": [
+    {
+      "name": "okx test",
+      "router": "okx",
+      "version": "v1",
+      "quota_reward": 0,
+      "is_active": true,
+      "created_at": "2026-03-03 21:24:34",
+      "updated_at": "2026-03-03 21:24:34"
+    }
+  ],
+  "success": true
+}
+```
+
+**Usage:**
+- Extract `router` and `version` from the response
+- Use these values in subsequent commands with `--router` and `--version` flags
+- **Default fallback**: If the API returns no data or is empty, use `router=okx` and `version=v1`
 
 ## Skill Routing
 

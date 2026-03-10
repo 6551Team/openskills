@@ -4,7 +4,7 @@ description: "This skill should be used when the user asks to 'swap tokens', 'tr
 license: Apache-2.0
 metadata:
   author: 6551
-  version: "1.0.0"
+  version: "1.0.1"
   homepage: "https://6551.io"
 ---
 
@@ -44,16 +44,7 @@ Every time before running any `opentrade` command, always follow these steps in 
    ```
    Get your API token at: https://6551.io/mcp
 
-## Skill Routing
-
-- For token search → use `opentrade-token`
-- For market prices → use `opentrade-market`
-- For transaction broadcasting → use `opentrade-gateway`
-- For wallet balances / portfolio → use `opentrade-portfolio`
-
-## Quickstart
-
-### Router Discovery
+## Router Discovery
 
 **IMPORTANT**: If the user has not specified a trading router, you MUST first discover available routers:
 
@@ -82,19 +73,22 @@ opentrade trade routers
 **Usage:**
 - Extract `router` and `version` from the response
 - Use these values in subsequent commands with `--router` and `--version` flags
-- **Default fallback**: If the API returns no data or is empty, use `--router okx --version v1`
+- **Default fallback**: If the API returns no data or is empty, use `router=okx` and `version=v1`
 
-**Example:**
-- If response contains `"router": "okx"` and `"version": "v1"`, use: `opentrade swap quote --router okx --version v1 ...`
-- If response is empty, use: `opentrade swap quote --router okx --version v1 ...`
+## Skill Routing
+
+- For token search → use `opentrade-token`
+- For market prices → use `opentrade-market`
+- For transaction broadcasting → use `opentrade-gateway`
+- For wallet balances / portfolio → use `opentrade-portfolio`
+
+## Quickstart
 
 ### EVM Swap (quote → approve → swap)
 
 ```bash
 # 1. Quote — sell 100 USDC for OKB on XLayer
 opentrade swap quote \
-  --router okx \
-  --version v1 \
   --from 0x74b7f16337b8972027f6196a17a631ac6de26d22 \
   --to 0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee \
   --amount 100000000 \
@@ -103,8 +97,6 @@ opentrade swap quote \
 
 # 2. Approve — ERC-20 tokens need approval before swap (skip for native OKB)
 opentrade swap approve \
-  --router okx \
-  --version v1 \
   --token 0x74b7f16337b8972027f6196a17a631ac6de26d22 \
   --amount 100000000 \
   --chain xlayer
@@ -112,41 +104,26 @@ opentrade swap approve \
 
 # 3. Swap
 opentrade swap swap \
-  --router okx \
-  --version v1 \
   --from 0x74b7f16337b8972027f6196a17a631ac6de26d22 \
   --to 0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee \
   --amount 100000000 \
   --chain xlayer \
   --wallet 0xYourWallet \
   --slippage 1
-# → Returns tx data → user signs → broadcast via opentrade-gateway
+# → Returns tx data: sign and broadcast via opentrade-gateway
 ```
 
-### Solana Swap (quote → swap)
+### Solana Swap
 
 ```bash
-# 1. Quote — sell 1 SOL for USDC on Solana
-opentrade swap quote \
-  --router okx \
-  --version v1 \
-  --from 11111111111111111111111111111111 \
-  --to EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v \
-  --amount 1000000000 \
-  --chain solana
-# → Expected: X.XX USDC, gas fee, price impact
-
-# 2. Swap (no approval needed on Solana)
 opentrade swap swap \
-  --router okx \
-  --version v1 \
   --from 11111111111111111111111111111111 \
-  --to EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v \
+  --to DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263 \
   --amount 1000000000 \
   --chain solana \
   --wallet YourSolanaWallet \
   --slippage 1
-# → Returns tx data → user signs → broadcast via opentrade-gateway
+# → Returns tx data: sign and broadcast via opentrade-gateway
 ```
 
 ## Chain Name Support
@@ -161,9 +138,6 @@ The CLI accepts human-readable chain names and resolves them automatically.
 | Base | `base` | `8453` |
 | BSC | `bsc` | `56` |
 | Arbitrum | `arbitrum` | `42161` |
-| Polygon | `polygon` | `137` |
-| Optimism | `optimism` | `10` |
-| Avalanche | `avalanche` | `43114` |
 
 ## Native Token Addresses
 
@@ -171,8 +145,11 @@ The CLI accepts human-readable chain names and resolves them automatically.
 
 | Chain | Native Token Address |
 |---|---|
-| EVM (Ethereum, BSC, Polygon, Arbitrum, Base, XLayer, etc.) | `0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee` |
+| EVM (Ethereum, BSC, Polygon, Arbitrum, Base, etc.) | `0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee` |
 | Solana | `11111111111111111111111111111111` |
+| Sui | `0x2::sui::SUI` |
+| Tron | `T9yD14Nj9j7xAB4dbGeiX9h8unkKHxuWwb` |
+| Ton | `EQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAM9c` |
 
 > **WARNING — Solana native SOL**: The correct address is `11111111111111111111111111111111` (Solana system program). Do **NOT** use `So11111111111111111111111111111111111111112` (wSOL SPL token) — it is a different token and will cause swap failures.
 
@@ -180,11 +157,11 @@ The CLI accepts human-readable chain names and resolves them automatically.
 
 | # | Command | Description |
 |---|---|---|
-| 1 | `opentrade trade routers` | Discover available routers |
-| 2 | `opentrade swap quote --router ... --version ... --from ... --to ... --amount ... --chain ...` | Get swap quote (read-only price estimate) |
-| 3 | `opentrade swap approve --router ... --version ... --token ... --amount ... --chain ...` | Get ERC-20 approval transaction data |
-| 4 | `opentrade swap swap --router ... --version ... --from ... --to ... --amount ... --chain ... --wallet ...` | Get swap transaction data |
-| 5 | `opentrade swap liquidity --router ... --version ... --chain ...` | Get available liquidity sources on a chain |
+| 1 | `opentrade swap chains` | Get supported chains for DEX aggregator |
+| 2 | `opentrade swap liquidity --chain <chain>` | Get available liquidity sources on a chain |
+| 3 | `opentrade swap approve --token ... --amount ... --chain ...` | Get ERC-20 approval transaction data |
+| 4 | `opentrade swap quote --from ... --to ... --amount ... --chain ...` | Get swap quote (read-only price estimate) |
+| 5 | `opentrade swap swap --from ... --to ... --amount ... --chain ... --wallet ...` | Get swap transaction data |
 
 ## Cross-Skill Workflows
 
@@ -198,17 +175,15 @@ This skill is the **execution endpoint** of most user trading flows. It almost a
 1. opentrade-token    opentrade token search BONK --chains solana               → get BONK tokenContractAddress
        ↓ tokenContractAddress
 2. opentrade-dex-swap opentrade swap quote \
-                      --router okx --version v1 \
                       --from 11111111111111111111111111111111 \
                       --to <BONK_address> --amount 1000000000 --chain solana → get quote
        ↓ user confirms
 3. opentrade-dex-swap opentrade swap swap \
-                      --router okx --version v1 \
                       --from 11111111111111111111111111111111 \
                       --to <BONK_address> --amount 1000000000 --chain solana \
                       --wallet <addr>                                        → get swap calldata
 4. User signs the transaction
-5. opentrade-gateway  opentrade gateway broadcast --router okx --version v1 --signed-tx <tx> --address <addr> --chain solana
+5. opentrade-gateway  opentrade gateway broadcast --signed-tx <tx> --address <addr> --chain solana
 ```
 
 **Data handoff**:
@@ -222,14 +197,14 @@ This skill is the **execution endpoint** of most user trading flows. It almost a
 
 ```
 1. opentrade-token    opentrade token search USDC --chains xlayer               → get USDC address
-2. opentrade-dex-swap opentrade swap quote --router okx --version v1 --from <USDC> --to 0xeeee...eeee --amount 100000000 --chain xlayer
+2. opentrade-dex-swap opentrade swap quote --from <USDC> --to 0xeeee...eeee --amount 100000000 --chain xlayer
        ↓ check isHoneyPot, taxRate, priceImpactPercent
-3. opentrade-dex-swap opentrade swap approve --router okx --version v1 --token <USDC> --amount 100000000 --chain xlayer
+3. opentrade-dex-swap opentrade swap approve --token <USDC> --amount 100000000 --chain xlayer
 4. User signs the approval transaction
-5. opentrade-gateway  opentrade gateway broadcast --router okx --version v1 --signed-tx <tx> --address <addr> --chain xlayer
-6. opentrade-dex-swap opentrade swap swap --router okx --version v1 --from <USDC> --to 0xeeee...eeee --amount 100000000 --chain xlayer --wallet <addr>
+5. opentrade-gateway  opentrade gateway broadcast --signed-tx <tx> --address <addr> --chain xlayer
+6. opentrade-dex-swap opentrade swap swap --from <USDC> --to 0xeeee...eeee --amount 100000000 --chain xlayer --wallet <addr>
 7. User signs the swap transaction
-8. opentrade-gateway  opentrade gateway broadcast --router okx --version v1 --signed-tx <tx> --address <addr> --chain xlayer
+8. opentrade-gateway  opentrade gateway broadcast --signed-tx <tx> --address <addr> --chain xlayer
 ```
 
 **Key**: EVM tokens (not native OKB) require an **approve** step. Skip it if user is selling native tokens.
@@ -237,7 +212,7 @@ This skill is the **execution endpoint** of most user trading flows. It almost a
 ### Workflow C: Compare Quote Then Execute
 
 ```
-1. opentrade swap quote --router okx --version v1 --from ... --to ... --amount ... --chain ...  → get quote with route info
+1. opentrade swap quote --from ... --to ... --amount ... --chain ...  → get quote with route info
 2. Display to user: expected output, gas, price impact, route
 3. If price impact > 5% → warn user
 4. If isHoneyPot = true → block trade, warn user
@@ -252,10 +227,10 @@ This skill is the **execution endpoint** of most user trading flows. It almost a
 1. opentrade swap quote ...              → Get price and route
 2. opentrade swap approve ...            → Get approval calldata (if needed)
 3. User signs the approval transaction
-4. opentrade gateway broadcast ...   → Broadcast approval tx
+4. opentrade gateway broadcast ...       → Broadcast approval tx
 5. opentrade swap swap ...               → Get swap calldata
 6. User signs the swap transaction
-7. opentrade gateway broadcast ...   → Broadcast swap tx
+7. opentrade gateway broadcast ...       → Broadcast swap tx
 ```
 
 ### Solana
@@ -264,7 +239,7 @@ This skill is the **execution endpoint** of most user trading flows. It almost a
 1. opentrade swap quote ...              → Get price and route
 2. opentrade swap swap ...               → Get swap calldata
 3. User signs the transaction
-4. opentrade gateway broadcast ...   → Broadcast tx
+4. opentrade gateway broadcast ...       → Broadcast tx
 ```
 
 ## Operation Flow
@@ -305,425 +280,135 @@ After displaying results, suggest 2-3 relevant follow-up actions:
 
 Present conversationally, e.g.: "Swap complete! Would you like to check your updated balance?" — never expose skill names or endpoint paths to the user.
 
-## Commands
+## CLI Command Reference
 
-### 1. Router Discovery
+### 1. opentrade swap chains
 
-Discover available trading routers before executing swaps.
-
-```bash
-opentrade trade routers
-```
-
-**Response:**
-```json
-{
-  "data": [
-    {
-      "name": "okx test",
-      "router": "okx",
-      "version": "v1",
-      "quota_reward": 0,
-      "is_active": true,
-      "created_at": "2026-03-03 21:24:34",
-      "updated_at": "2026-03-03 21:24:34"
-    }
-  ],
-  "success": true
-}
-```
-
-**Usage:**
-- Always call this first if user hasn't specified a router
-- Use `router` and `version` values in subsequent commands
-- Default to `okx` / `v1` if response is empty
-
----
-
-### 2. Get Swap Quote
-
-Get a quote for swapping tokens.
+Get supported chains for DEX aggregator. No parameters required.
 
 ```bash
-opentrade swap quote \
-  --router <router> \
-  --version <version> \
-  --from <token_address> \
-  --to <token_address> \
-  --amount <amount_in_minimal_units> \
-  --chain <chain_name> \
-  [--slippage <percent>] \
-  [--mode <exactIn|exactOut>]
+opentrade swap chains
 ```
 
-**Parameters:**
-- `--router`: Router name (from routers command, default: `okx`)
-- `--version`: Router version (from routers command, default: `v1`)
-- `--from`: Source token address (use `0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee` for native tokens on EVM, `11111111111111111111111111111111` for SOL)
-- `--to`: Destination token address
-- `--amount`: Amount in minimal units (wei for EVM, lamports for Solana)
-- `--chain`: Chain name (e.g., `ethereum`, `solana`, `xlayer`, `base`, `bsc`, `arbitrum`, `polygon`)
-- `--slippage`: Slippage tolerance in percent (default: `1`, range: `0.01-50`)
-- `--mode`: Swap mode — `exactIn` (default) or `exactOut` (only on Ethereum/Base/BSC/Arbitrum)
+**Return fields**:
 
-**Example:**
-```bash
-# Quote: Sell 100 USDC for ETH on Ethereum
-opentrade swap quote \
-  --router okx \
-  --version v1 \
-  --from 0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48 \
-  --to 0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee \
-  --amount 100000000 \
-  --chain ethereum \
-  --slippage 1
-```
+| Field | Type | Description |
+|---|---|---|
+| `chainIndex` | String | Chain identifier (e.g., `"1"`, `"501"`) |
+| `chainName` | String | Human-readable chain name |
+| `dexTokenApproveAddress` | String | DEX router address for token approvals on this chain |
 
-**Response:**
-```json
-{
-  "data": {
-    "fromToken": {
-      "address": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
-      "symbol": "USDC",
-      "decimals": 6
-    },
-    "toToken": {
-      "address": "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
-      "symbol": "ETH",
-      "decimals": 18
-    },
-    "fromAmount": "100000000",
-    "toAmount": "32145678901234567",
-    "estimatedGas": "150000",
-    "gasFeeInUsd": "5.23",
-    "priceImpact": "0.15",
-    "minReceiveAmount": "31824321890123456",
-    "routes": [
-      {
-        "dex": "Uniswap V3",
-        "percentage": 100
-      }
-    ]
-  },
-  "success": true
-}
-```
+### 2. opentrade swap liquidity
 
-**Key Fields:**
-- `toAmount`: Expected output amount in minimal units
-- `fromAmount`: Input amount in minimal units
-- `estimatedGas`: Gas estimate
-- `gasFeeInUsd`: Gas cost in USD
-- `priceImpact`: Price impact percentage
-- `minReceiveAmount`: Minimum amount after slippage
-- `routes`: DEX routing breakdown
-- `fromToken.isHoneyPot`: `true` = source token is a honeypot (cannot sell)
-- `fromToken.taxRate`: Source token buy/sell tax rate
-- `toToken.isHoneyPot`: `true` = destination token is a honeypot (cannot sell)
-- `toToken.taxRate`: Destination token buy/sell tax rate
-
----
-
-### 3. Get Approval Data
-
-Get ERC-20 token approval transaction data (EVM chains only).
+Get available liquidity sources on a chain.
 
 ```bash
-opentrade swap approve \
-  --router <router> \
-  --version <version> \
-  --token <token_address> \
-  --amount <amount_in_minimal_units> \
-  --chain <chain_name>
+opentrade swap liquidity --chain <chain>
 ```
 
-**Parameters:**
-- `--router`: Router name (from routers command, default: `okx`)
-- `--version`: Router version (from routers command, default: `v1`)
-- `--token`: Token contract address to approve
-- `--amount`: Amount to approve in minimal units (use max uint256 for unlimited)
-- `--chain`: Chain name (e.g., `ethereum`, `xlayer`, `base`, `bsc`, `arbitrum`, `polygon`)
+| Param | Required | Default | Description |
+|---|---|---|---|
+| `--chain` | Yes | - | Chain name (e.g., `ethereum`, `solana`, `xlayer`) |
 
-**Example:**
-```bash
-# Approve 100 USDC on Ethereum
-opentrade swap approve \
-  --router okx \
-  --version v1 \
-  --token 0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48 \
-  --amount 100000000 \
-  --chain ethereum
-```
+**Return fields**:
 
-**Response:**
-```json
-{
-  "data": {
-    "to": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
-    "data": "0x095ea7b3000000000000000000000000...",
-    "value": "0",
-    "gasLimit": "50000"
-  },
-  "success": true
-}
-```
+| Field | Type | Description |
+|---|---|---|
+| `id` | String | Liquidity source ID |
+| `name` | String | Liquidity source name (e.g., `"Uniswap V3"`, `"CurveNG"`) |
+| `logo` | String | Liquidity source logo URL |
 
-**Next Steps:**
-1. Sign the transaction with user's wallet
-2. Broadcast via `opentrade-gateway`
-3. Wait for confirmation
-4. Proceed with swap
+### 3. opentrade swap approve
 
-**Note:** Native tokens (ETH, OKB, SOL) do not require approval.
-
----
-
-### 4. Get Swap Transaction
-
-Get the swap transaction data to execute the trade.
+Get ERC-20 approval transaction data.
 
 ```bash
-opentrade swap swap \
-  --router <router> \
-  --version <version> \
-  --from <token_address> \
-  --to <token_address> \
-  --amount <amount_in_minimal_units> \
-  --chain <chain_name> \
-  --wallet <user_wallet_address> \
-  [--slippage <percent>] \
-  [--mode <exactIn|exactOut>]
+opentrade swap approve --token <address> --amount <amount> --chain <chain>
 ```
 
-**Parameters:**
-- `--router`: Router name (from routers command, default: `okx`)
-- `--version`: Router version (from routers command, default: `v1`)
-- `--from`: Source token address
-- `--to`: Destination token address
-- `--amount`: Amount in minimal units
-- `--chain`: Chain name
-- `--wallet`: User's wallet address
-- `--slippage`: Slippage tolerance in percent (default: `1`)
-- `--mode`: Swap mode — `exactIn` (default) or `exactOut`
+| Param | Required | Default | Description |
+|---|---|---|---|
+| `--token` | Yes | - | Token contract address to approve |
+| `--amount` | Yes | - | Amount in minimal units |
+| `--chain` | Yes | - | Chain name |
 
-**Example:**
-```bash
-# Swap 100 USDC for ETH on Ethereum
-opentrade swap swap \
-  --router okx \
-  --version v1 \
-  --from 0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48 \
-  --to 0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee \
-  --amount 100000000 \
-  --chain ethereum \
-  --wallet 0xYourWalletAddress \
-  --slippage 1
-```
+**Return fields**:
 
-**Response (EVM):**
-```json
-{
-  "data": {
-    "to": "0x1111111254eeb25477b68fb85ed929f73a960582",
-    "data": "0x12aa3caf000000000000000000000000...",
-    "value": "0",
-    "gasLimit": "200000"
-  },
-  "success": true
-}
-```
+| Field | Type | Description |
+|---|---|---|
+| `data` | String | Approval calldata (hex) — use as tx `data` field |
+| `dexContractAddress` | String | Spender address (already encoded in `data`). **NOT** the tx `to` — send tx to the token contract |
+| `gasLimit` | String | Estimated gas limit for the approval tx |
+| `gasPrice` | String | Recommended gas price |
 
-**Response (Solana):**
-```json
-{
-  "data": {
-    "transaction": "base64_encoded_transaction_data",
-    "signers": ["wallet_address"]
-  },
-  "success": true
-}
-```
+### 4. opentrade swap quote
 
-**Return Fields (EVM):**
-- `to`: Contract address to send the transaction to
-- `data`: Transaction calldata (hex)
-- `value`: Native token value to send (in minimal units)
-- `gasLimit`: Gas limit for the transaction
-
-**Return Fields (Solana):**
-- `transaction`: Base64 encoded transaction data
-- `signers`: Array of wallet addresses that need to sign
-
-**Next Steps:**
-1. Sign the transaction with user's wallet
-2. Broadcast via `opentrade-gateway`
-3. Track transaction status
-
----
-
-### 5. Get Liquidity Sources
-
-List available DEX sources for a specific chain.
+Get swap quote (read-only price estimate).
 
 ```bash
-opentrade swap liquidity \
-  --router <router> \
-  --version <version> \
-  --chain <chain_name>
+opentrade swap quote --from <address> --to <address> --amount <amount> --chain <chain> [--swap-mode <mode>]
 ```
 
-**Parameters:**
-- `--router`: Router name (from routers command, default: `okx`)
-- `--version`: Router version (from routers command, default: `v1`)
-- `--chain`: Chain name (e.g., `ethereum`, `solana`, `xlayer`, `base`)
+| Param | Required | Default | Description |
+|---|---|---|---|
+| `--from` | Yes | - | Source token contract address |
+| `--to` | Yes | - | Destination token contract address |
+| `--amount` | Yes | - | Amount in minimal units (sell amount if exactIn, buy amount if exactOut) |
+| `--chain` | Yes | - | Chain name |
+| `--swap-mode` | No | `exactIn` | `exactIn` or `exactOut` |
 
-**Example:**
-```bash
-# Get DEX sources on XLayer
-opentrade swap liquidity \
-  --router okx \
-  --version v1 \
-  --chain xlayer
-```
+**Return fields**:
 
-**Response:**
-```json
-{
-  "data": {
-    "dexList": [
-      {
-        "name": "XLayer DEX",
-        "protocol": "uniswap-v2"
-      },
-      {
-        "name": "CurveNG",
-        "protocol": "curve"
-      },
-      {
-        "name": "Merchant Moe",
-        "protocol": "trader-joe"
-      }
-    ]
-  },
-  "success": true
-}
-```
+| Field | Type | Description |
+|---|---|---|
+| `fromToken.symbol` | String | Source token symbol |
+| `fromToken.decimals` | Number | Source token decimals |
+| `fromToken.isHoneyPot` | Boolean | `true` = honeypot (cannot sell) |
+| `fromToken.taxRate` | String | Buy/sell tax rate |
+| `toToken.symbol` | String | Destination token symbol |
+| `toToken.decimals` | Number | Destination token decimals |
+| `toToken.isHoneyPot` | Boolean | `true` = honeypot |
+| `toToken.taxRate` | String | Buy/sell tax rate |
+| `estimateGasFee` | String | Estimated gas fee in native token minimal units |
+| `fromTokenAmount` | String | Input amount in minimal units |
+| `toTokenAmount` | String | Output amount in minimal units |
+| `priceImpactPercentage` | String | Price impact as percentage |
+| `tradeFee` | String | Trade fee |
+| `routerResult.dexRouterList` | Array | Routing breakdown across DEXes |
 
-**Return Fields:**
-- `dexList[].name`: DEX name (e.g., "Uniswap V3", "CurveNG")
-- `dexList[].protocol`: Protocol type (e.g., "uniswap-v2", "curve")
+### 5. opentrade swap swap
 
----
-
-## Supported Chains
-
-| Chain | Name | Native Token Address (EVM) |
-|-------|------|----------------------------|
-| Ethereum | `ethereum` | `0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee` |
-| XLayer | `xlayer` | `0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee` |
-| Base | `base` | `0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee` |
-| BSC | `bsc` | `0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee` |
-| Arbitrum | `arbitrum` | `0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee` |
-| Polygon | `polygon` | `0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee` |
-| Optimism | `optimism` | `0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee` |
-| Avalanche | `avalanche` | `0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee` |
-| Solana | `solana` | `11111111111111111111111111111111` |
-
-**Note:** For Solana native SOL, use `11111111111111111111111111111111` (system program), NOT `So11111111111111111111111111111111111111112` (wSOL).
-
----
-
-## Workflow Examples
-
-### Complete EVM Swap Flow
-
-**User says:** "Swap 100 USDC for ETH on Ethereum"
+Get swap transaction data.
 
 ```bash
-# Step 1: Discover router (if not already known)
-opentrade trade routers
-# → Use router=okx, version=v1
-
-# Step 2: Get quote
-opentrade swap quote \
-  --router okx \
-  --version v1 \
-  --from 0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48 \
-  --to 0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee \
-  --amount 100000000 \
-  --chain ethereum \
-  --slippage 1
-# → Display: "You'll receive ~0.032 ETH, gas fee: $5.23, price impact: 0.15%"
-
-# Step 3: Check if approval needed (skip for native tokens)
-opentrade swap approve \
-  --router okx \
-  --version v1 \
-  --token 0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48 \
-  --amount 100000000 \
-  --chain ethereum
-# → Returns approval tx → user signs → broadcast via opentrade-gateway
-
-# Step 4: Execute swap
-opentrade swap swap \
-  --router okx \
-  --version v1 \
-  --from 0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48 \
-  --to 0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee \
-  --amount 100000000 \
-  --chain ethereum \
-  --wallet 0xYourWallet \
-  --slippage 1
-# → Returns tx data → user signs → broadcast via opentrade-gateway
+opentrade swap swap --from <address> --to <address> --amount <amount> --chain <chain> --wallet <address> [--slippage <pct>] [--swap-mode <mode>]
 ```
 
-### Complete Solana Swap Flow
+| Param | Required | Default | Description |
+|---|---|---|---|
+| `--from` | Yes | - | Source token contract address |
+| `--to` | Yes | - | Destination token contract address |
+| `--amount` | Yes | - | Amount in minimal units |
+| `--chain` | Yes | - | Chain name |
+| `--wallet` | Yes | - | User wallet address |
+| `--slippage` | No | `1` | Slippage tolerance in percent (`0.01`–`50`) |
+| `--swap-mode` | No | `exactIn` | `exactIn` or `exactOut` |
 
-**User says:** "Swap 1 SOL for USDC on Solana"
+**Return fields (EVM)**:
 
-```bash
-# Step 1: Discover router
-opentrade trade routers
-# → Use router=okx, version=v1
+| Field | Type | Description |
+|---|---|---|
+| `tx.to` | String | Contract address to call |
+| `tx.data` | String | Transaction calldata (hex) |
+| `tx.value` | String | Native token value to send (minimal units) |
+| `tx.gas` | String | Gas limit |
 
-# Step 2: Get quote
-opentrade swap quote \
-  --router okx \
-  --version v1 \
-  --from 11111111111111111111111111111111 \
-  --to EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v \
-  --amount 1000000000 \
-  --chain solana \
-  --slippage 1
-# → Display: "You'll receive ~180 USDC, gas fee: $0.0001, price impact: 0.05%"
+**Return fields (Solana)**:
 
-# Step 3: Execute swap (no approval needed on Solana)
-opentrade swap swap \
-  --router okx \
-  --version v1 \
-  --from 11111111111111111111111111111111 \
-  --to EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v \
-  --amount 1000000000 \
-  --chain solana \
-  --wallet YourSolanaWallet \
-  --slippage 1
-# → Returns tx data → user signs → broadcast via opentrade-gateway
-```
-
-### Check Available DEXes
-
-**User says:** "What DEXes are available on XLayer?"
-
-```bash
-opentrade swap liquidity \
-  --router okx \
-  --version v1 \
-  --chain xlayer
-# → Display: CurveNG, XLayer DEX, ... (DEX sources on XLayer)
-```
-
----
+| Field | Type | Description |
+|---|---|---|
+| `tx.data` | String | Base64-encoded transaction |
+| `tx.signers` | Array | Wallet addresses that must sign |
 
 ## Input / Output Examples
 
@@ -731,26 +416,24 @@ opentrade swap liquidity \
 
 ```bash
 # 1. Quote
-opentrade swap quote --router okx --version v1 --from 0x74b7f16337b8972027f6196a17a631ac6de26d22 --to 0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee --amount 100000000 --chain xlayer
+opentrade swap quote --from 0x74b7f16337b8972027f6196a17a631ac6de26d22 --to 0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee --amount 100000000 --chain xlayer
 # → Expected output: 3.2 OKB, Gas fee: ~$0.001, Price impact: 0.05%
 
 # 2. Approve (ERC-20 token needs approval)
-opentrade swap approve --router okx --version v1 --token 0x74b7f16337b8972027f6196a17a631ac6de26d22 --amount 100000000 --chain xlayer
+opentrade swap approve --token 0x74b7f16337b8972027f6196a17a631ac6de26d22 --amount 100000000 --chain xlayer
 # → Returns approval calldata → user signs → broadcast
 
 # 3. Swap
-opentrade swap swap --router okx --version v1 --from 0x74b7f16337b8972027f6196a17a631ac6de26d22 --to 0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee --amount 100000000 --chain xlayer --wallet 0xYourWallet --slippage 1
+opentrade swap swap --from 0x74b7f16337b8972027f6196a17a631ac6de26d22 --to 0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee --amount 100000000 --chain xlayer --wallet 0xYourWallet --slippage 1
 # → Returns tx data → user signs → broadcast
 ```
 
 **User says:** "What DEXes are available on XLayer?"
 
 ```bash
-opentrade swap liquidity --router okx --version v1 --chain xlayer
+opentrade swap liquidity --chain xlayer
 # → Display: CurveNG, XLayer DEX, ... (DEX sources on XLayer)
 ```
-
----
 
 ## Edge Cases
 
@@ -764,8 +447,6 @@ opentrade swap liquidity --router okx --version v1 --chain xlayer
 - **Network error**: retry once, then prompt user to try again later
 - **Region restriction (error code 50125 or 80001)**: do NOT show the raw error code to the user. Instead, display a friendly message: `⚠️ Service is not available in your region. Please switch to a supported region and try again.`
 
----
-
 ## Amount Display Rules
 
 - Input/output amounts in UI units (`1.5 ETH`, `3,200 USDC`)
@@ -774,8 +455,6 @@ opentrade swap liquidity --router okx --version v1 --chain xlayer
 - `minReceiveAmount` in both UI units and USD
 - Price impact as percentage
 
----
-
 ## Global Notes
 
 - Amounts must be in **minimal units** (wei/lamports)
@@ -783,8 +462,4 @@ opentrade swap liquidity --router okx --version v1 --chain xlayer
 - Check `isHoneyPot` and `taxRate` — surface safety info to users
 - EVM contract addresses must be **all lowercase**
 - The CLI resolves chain names automatically (e.g., `ethereum` → `1`, `solana` → `501`)
-- The CLI handles authentication internally via environment variables or config file
-- Get your API token at https://6551.io/mcp
-- Each request consumes 1 quota unit
-- Base URL: `https://ai.6551.io/open`
-- Authentication: Bearer token in Authorization header
+- The CLI handles authentication internally via environment variables — see Prerequisites step 4 for default values

@@ -44,16 +44,6 @@ Every time before running any `opentrade` command, always follow these steps in 
    ```
    Get your API token at: https://6551.io/mcp
 
-## Skill Routing
-
-- For token search / metadata / rankings / holder analysis → use `opentrade-token`
-- For swap execution → use `opentrade-dex-swap`
-- For transaction broadcasting → use `opentrade-transaction`
-- For wallet balances / portfolio → use `opentrade-portfolio`
-- Signal data (smart money / whale / KOL buy signals, signal-supported chains) → use `opentrade-market`
-- Meme pump scanning (token lists, dev info, bundle detection, aped wallets) → use `opentrade-market`
-- Meme token safety (rug pull check, dev reputation, bundler/sniper analysis, similar tokens by same dev) → use `opentrade-market`
-
 ## Router Discovery
 
 **IMPORTANT**: If the user has not specified a trading router, you MUST first discover available routers:
@@ -84,6 +74,16 @@ opentrade trade routers
 - Extract `router` and `version` from the response
 - Use these values in subsequent commands with `--router` and `--version` flags
 - **Default fallback**: If the API returns no data or is empty, use `router=okx` and `version=v1`
+
+## Skill Routing
+
+- For token search / metadata / rankings / holder analysis → use `opentrade-token`
+- For swap execution → use `opentrade-dex-swap`
+- For transaction broadcasting → use `opentrade-transaction`
+- For wallet balances / portfolio → use `opentrade-portfolio`
+- Signal data (smart money / whale / KOL buy signals, signal-supported chains) → use `opentrade-market`
+- Meme pump scanning (token lists, dev info, bundle detection, aped wallets) → use `opentrade-market`
+- Meme token safety (rug pull check, dev reputation, bundler/sniper analysis, similar tokens by same dev) → use `opentrade-market`
 
 ## Quickstart
 

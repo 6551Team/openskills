@@ -44,13 +44,6 @@ Every time before running any `opentrade` command, always follow these steps in 
    ```
    Get your API token at: https://6551.io/mcp
 
-## Skill Routing
-
-- For real-time prices / K-lines / trade history → use `opentrade-market`
-- For swap execution → use `opentrade-dex-swap`
-- For transaction broadcasting → use `opentrade-transaction`
-- For wallet balances / portfolio → use `opentrade-portfolio`
-
 ## Router Discovery
 
 **IMPORTANT**: If the user has not specified a trading router, you MUST first discover available routers:
@@ -81,6 +74,13 @@ opentrade trade routers
 - Extract `router` and `version` from the response
 - Use these values in subsequent commands with `--router` and `--version` flags
 - **Default fallback**: If the API returns no data or is empty, use `router=okx` and `version=v1`
+
+## Skill Routing
+
+- For real-time prices / K-lines / trade history → use `opentrade-market`
+- For swap execution → use `opentrade-dex-swap`
+- For transaction broadcasting → use `opentrade-transaction`
+- For wallet balances / portfolio → use `opentrade-portfolio`
 
 ## Quickstart
 

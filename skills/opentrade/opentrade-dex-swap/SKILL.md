@@ -58,24 +58,24 @@ opentrade trade routers
 **Response format:**
 ```json
 {
+  "ok": true,
   "data": [
     {
-      "name": "okx test",
-      "router": "okx",
-      "version": "v1",
-      "quota_reward": 0,
-      "is_active": true,
+      "api": "v1",
       "created_at": "2026-03-03 21:24:34",
+      "is_active": true,
+      "name": "okx test",
+      "quota_reward": 0,
+      "trader": "okx",
       "updated_at": "2026-03-03 21:24:34"
     }
-  ],
-  "success": true
+  ]
 }
 ```
 
 **Usage:**
-- Extract `router` and `version` from the response
-- **MANDATORY**: ALL subsequent `opentrade` commands in this session MUST include `--trader <router>` and `--api <version>` flags
+- Extract `trader` and `api` from the response
+- **MANDATORY**: ALL subsequent `opentrade` commands in this session MUST include `--trader <trader>` and `--api <api>` flags
 - Example: `opentrade swap quote --from 0x... --to 0x... --amount 100 --chain ethereum --trader okx --api v1`
 - **Default fallback**: If the API returns no data or is empty, use `--trader okx --api v1`
 

@@ -37,11 +37,7 @@ impl Context {
 
     /// Create an API client with Bearer token authentication.
     pub fn client(&self) -> Result<ApiClient> {
-        ApiClient::new(
-            self.base_url_override.as_deref(),
-            &self.trader,
-            &self.api,
-        )
+        ApiClient::new(self.base_url_override.as_deref(), &self.trader, &self.api)
     }
 
     /// Resolve chain to chainIndex (e.g. "ethereum" -> "1", "solana" -> "501").

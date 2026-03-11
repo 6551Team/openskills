@@ -61,6 +61,15 @@ opentrade trade routers
   "ok": true,
   "data": [
     {
+      "api": "v2",
+      "created_at": "2026-03-10 01:15:42",
+      "is_active": true,
+      "name": "6551dex test",
+      "quota_reward": 0,
+      "trader": "6551dex",
+      "updated_at": "2026-03-10 01:15:42"
+    },
+    {
       "api": "v1",
       "created_at": "2026-03-03 21:24:34",
       "is_active": true,

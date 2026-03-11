@@ -38,11 +38,14 @@ Every time before running any `opentrade` command, always follow these steps in 
    ```bash
    curl -sSL https://raw.githubusercontent.com/6551Team/openskills/main/skills/opentrade/install.sh | sh
    ```
-4. Create a `.env` file in the project root to override the default API credentials (optional — skip this for quick start):
-   ```
-   OPEN_TOKEN=your_token_here
-   ```
-   Get your API token at: https://6551.io/mcp
+4. Find or create a .env file in the project root to override the default API credentials, Load it before performing opentrade operations.
+  ```bash
+  OPEN_TOKEN=your_token_here
+  ```
+
+  Get your API token at: https://6551.io/mcp
+
+  **Security warning**: Never commit .env to git (add it to .gitignore) and never expose credentials in logs, screenshots, or chat messages.
 
 ## Router Discovery
 

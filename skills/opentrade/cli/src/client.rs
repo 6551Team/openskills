@@ -9,11 +9,11 @@ pub struct ApiClient {
     base_url: String,
     token: String,
     trader: String,
-    version: String,
+    api: String,
 }
 
 impl ApiClient {
-    pub fn new(base_url_override: Option<&str>, trader: &str, version: &str) -> Result<Self> {
+    pub fn new(base_url_override: Option<&str>, trader: &str, api: &str) -> Result<Self> {
         let token = std::env::var("OPEN_TOKEN").context(
             "Find or create a .env file in the project root to override the default API credentials, Load it before performing opentrade operations.
   ```bash
@@ -35,7 +35,7 @@ impl ApiClient {
             base_url,
             token,
             trader: trader.to_string(),
-            version: version.to_string(),
+            api: api.to_string(),
         })
     }
 
@@ -57,10 +57,10 @@ impl ApiClient {
             format!("?{}", pairs.join("&"))
         };
 
-        // Build URL with trader and version: /open/trader/{trader}/{version}{path}
+        // Build URL with trader and api version: /open/trader/{trader}/{api}{path}
         let request_path = format!(
             "/open/trader/{}/{}{}{}",
-            self.trader, self.version, path, query_string
+            self.trader, self.api, path, query_string
         );
         let url = format!("{}{}", self.base_url.trim_end_matches('/'), request_path);
 
@@ -80,8 +80,8 @@ impl ApiClient {
     pub async fn post(&self, path: &str, body: &Value) -> Result<Value> {
         let body_str = serde_json::to_string(body)?;
 
-        // Build URL with trader and version: /open/trader/{trader}/{version}{path}
-        let request_path = format!("/open/trader/{}/{}{}", self.trader, self.version, path);
+        // Build URL with trader and api version: /open/trader/{trader}/{api}{path}
+        let request_path = format!("/open/trader/{}/{}{}", self.trader, self.api, path);
         let url = format!("{}{}", self.base_url.trim_end_matches('/'), request_path);
 
         let resp = self
@@ -97,7 +97,7 @@ impl ApiClient {
         self.handle_response(resp).await
     }
 
-    /// GET request at trader level (without router/version in path)
+    /// GET request at trader level (without router/api version in path)
     /// Used for endpoints like /open/trader/routers
     pub async fn get_trader_level(&self, path: &str) -> Result<Value> {
         // Build URL at trader level: /open/trader{path}

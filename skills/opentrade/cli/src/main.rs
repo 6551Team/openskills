@@ -12,14 +12,9 @@ use clap::{Parser, Subcommand, ValueEnum};
 #[command(
     name = "opentrade",
     version,
-    about = "OpenTrade CLI - interact with OpenTrade API",
-    disable_version_flag = true
+    about = "OpenTrade CLI - interact with OpenTrade API"
 )]
 pub struct Cli {
-    /// Show version information
-    #[arg(short = 'V', long)]
-    pub show_version: bool,
-
     /// Output format
     #[arg(short, long, global = true, default_value = "json")]
     pub output: OutputFormat,
@@ -38,7 +33,7 @@ pub struct Cli {
 
     /// API version (default: v1)
     #[arg(long, global = true, default_value = "v1")]
-    pub version: String,
+    pub api: String,
 
     #[command(subcommand)]
     pub command: Commands,
@@ -89,12 +84,6 @@ async fn main() {
     dotenvy::dotenv().ok();
 
     let cli = Cli::parse();
-
-    // Handle version flag
-    if cli.show_version {
-        println!("opentrade {}", env!("CARGO_PKG_VERSION"));
-        return;
-    }
 
     let ctx = commands::Context::new(&cli);
 

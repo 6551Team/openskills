@@ -73,7 +73,7 @@ pub async fn execute(ctx: &Context, cmd: PortfolioCommand) -> Result<()> {
     }
 }
 
-/// GET /trader/{router}/{version}/balance/supported/chain
+/// GET /trader/{router}/{api}/balance/supported/chain
 async fn chains(ctx: &Context) -> Result<()> {
     let client = ctx.client()?;
     let data = client.get("/balance/chains", &[]).await?;
@@ -81,7 +81,7 @@ async fn chains(ctx: &Context) -> Result<()> {
     Ok(())
 }
 
-/// GET /trader/{router}/{version}/balance/total-value-by-address
+/// GET /trader/{router}/{api}/balance/total-value-by-address
 async fn total_value(
     ctx: &Context,
     address: &str,
@@ -109,7 +109,7 @@ async fn total_value(
     Ok(())
 }
 
-/// GET /trader/{router}/{version}/balance/all-token-balances-by-address
+/// GET /trader/{router}/{api}/balance/all-token-balances-by-address
 async fn all_balances(
     ctx: &Context,
     address: &str,
@@ -133,7 +133,7 @@ async fn all_balances(
     Ok(())
 }
 
-/// POST /trader/{router}/{version}/balance/token-balances-by-address
+/// POST /trader/{router}/{api}/balance/token-balances-by-address
 async fn token_balances(
     ctx: &Context,
     address: &str,

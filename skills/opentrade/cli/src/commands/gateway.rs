@@ -108,7 +108,7 @@ pub async fn execute(ctx: &Context, cmd: GatewayCommand) -> Result<()> {
     }
 }
 
-/// GET /trader/{router}/{version}/gateway/chains
+/// GET /trader/{router}/{api}/gateway/chains
 async fn chains(ctx: &Context) -> Result<()> {
     let client = ctx.client()?;
     let data = client.get("/gateway/chains", &[]).await?;
@@ -116,7 +116,7 @@ async fn chains(ctx: &Context) -> Result<()> {
     Ok(())
 }
 
-/// GET /trader/{router}/{version}/gateway/gas
+/// GET /trader/{router}/{api}/gateway/gas
 async fn gas(ctx: &Context, chain: &str) -> Result<()> {
     let chain_index = crate::chains::resolve_chain(chain);
     let client = ctx.client()?;
@@ -127,7 +127,7 @@ async fn gas(ctx: &Context, chain: &str) -> Result<()> {
     Ok(())
 }
 
-/// POST /trader/{router}/{version}/gateway/gas-limit
+/// POST /trader/{router}/{api}/gateway/gas-limit
 async fn gas_limit(
     ctx: &Context,
     from: &str,
@@ -152,7 +152,7 @@ async fn gas_limit(
     Ok(())
 }
 
-/// POST /trader/{router}/{version}/gateway/simulate
+/// POST /trader/{router}/{api}/gateway/simulate
 async fn simulate(
     ctx: &Context,
     from: &str,
@@ -175,7 +175,7 @@ async fn simulate(
     Ok(())
 }
 
-/// POST /trader/{router}/{version}/gateway/broadcast
+/// POST /trader/{router}/{api}/gateway/broadcast
 async fn broadcast(ctx: &Context, signed_tx: &str, address: &str, chain: &str) -> Result<()> {
     let chain_index = crate::chains::resolve_chain(chain);
     let client = ctx.client()?;
@@ -189,7 +189,7 @@ async fn broadcast(ctx: &Context, signed_tx: &str, address: &str, chain: &str) -
     Ok(())
 }
 
-/// GET /trader/{router}/{version}/gateway/orders
+/// GET /trader/{router}/{api}/gateway/orders
 async fn orders(ctx: &Context, address: &str, chain: &str, order_id: Option<&str>) -> Result<()> {
     let chain_index = crate::chains::resolve_chain(chain);
     let client = ctx.client()?;

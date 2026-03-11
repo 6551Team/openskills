@@ -67,7 +67,7 @@ pub async fn execute(ctx: &Context, cmd: TokenCommand) -> Result<()> {
     }
 }
 
-/// GET /trader/{router}/{version}/token/search
+/// GET /trader/{router}/{api}/token/search
 async fn search(ctx: &Context, query: &str, chains: &str) -> Result<()> {
     let resolved_chains = crate::chains::resolve_chains(chains);
     let client = ctx.client()?;
@@ -81,7 +81,7 @@ async fn search(ctx: &Context, query: &str, chains: &str) -> Result<()> {
     Ok(())
 }
 
-/// POST /trader/{router}/{version}/token/info
+/// POST /trader/{router}/{api}/token/info
 async fn info(ctx: &Context, address: &str, chain: Option<String>) -> Result<()> {
     let chain_index = chain
         .map(|c| crate::chains::resolve_chain(&c).to_string())
@@ -96,7 +96,7 @@ async fn info(ctx: &Context, address: &str, chain: Option<String>) -> Result<()>
     Ok(())
 }
 
-/// POST /trader/{router}/{version}/token/price-info
+/// POST /trader/{router}/{api}/token/price-info
 async fn price_info(ctx: &Context, address: &str, chain: Option<String>) -> Result<()> {
     let chain_index = chain
         .map(|c| crate::chains::resolve_chain(&c).to_string())
@@ -111,7 +111,7 @@ async fn price_info(ctx: &Context, address: &str, chain: Option<String>) -> Resu
     Ok(())
 }
 
-/// GET /trader/{router}/{version}/token/toplist
+/// GET /trader/{router}/{api}/token/toplist
 async fn toplist(ctx: &Context, chains: &str, sort_by: &str, time_frame: &str) -> Result<()> {
     let resolved_chains = crate::chains::resolve_chains(chains);
     let client = ctx.client()?;
@@ -129,7 +129,7 @@ async fn toplist(ctx: &Context, chains: &str, sort_by: &str, time_frame: &str) -
     Ok(())
 }
 
-/// GET /trader/{router}/{version}/token/holder
+/// GET /trader/{router}/{api}/token/holder
 async fn holders(ctx: &Context, address: &str, chain: Option<String>) -> Result<()> {
     let chain_index = chain
         .map(|c| crate::chains::resolve_chain(&c).to_string())

@@ -54,11 +54,11 @@ opentrade [OPTIONS] <COMMAND>
 
 Options:
   --trader <TRADER>      Trading router (default: okx)
-  --version <VERSION>    API version (default: v1)
+  --api <VERSION>        API version (default: v1)
   --base-url <URL>       Backend service URL (default: https://ai.6551.io)
   --chain <CHAIN>        Chain name (ethereum, solana, xlayer, etc.)
   -o, --output <FORMAT>  Output format: json, table (default: json)
-  -V, --show-version     Show version information
+  -V, --version          Show version information
   -h, --help             Print help
 ```
 

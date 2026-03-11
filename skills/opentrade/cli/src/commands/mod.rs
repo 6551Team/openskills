@@ -19,7 +19,7 @@ pub struct Context {
     pub chain_override: Option<String>,
     pub output_format: crate::OutputFormat,
     pub trader: String,
-    pub version: String,
+    pub api: String,
 }
 
 impl Context {
@@ -31,7 +31,7 @@ impl Context {
             chain_override: cli.chain.clone(),
             output_format: cli.output,
             trader: cli.trader.clone(),
-            version: cli.version.clone(),
+            api: cli.api.clone(),
         }
     }
 
@@ -40,7 +40,7 @@ impl Context {
         ApiClient::new(
             self.base_url_override.as_deref(),
             &self.trader,
-            &self.version,
+            &self.api,
         )
     }
 

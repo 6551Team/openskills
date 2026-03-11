@@ -75,9 +75,9 @@ opentrade trade routers
 
 **Usage:**
 - Extract `router` and `version` from the response
-- **MANDATORY**: ALL subsequent `opentrade` commands in this session MUST include `--trader <router>` and `--version <version>` flags
-- Example: `opentrade gateway gas --chain ethereum --trader okx --version v1`
-- **Default fallback**: If the API returns no data or is empty, use `--trader okx --version v1`
+- **MANDATORY**: ALL subsequent `opentrade` commands in this session MUST include `--trader <router>` and `--api <version>` flags
+- Example: `opentrade gateway gas --chain ethereum --trader okx --api v1`
+- **Default fallback**: If the API returns no data or is empty, use `--trader okx --api v1`
 
 ## Skill Routing
 

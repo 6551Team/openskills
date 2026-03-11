@@ -278,7 +278,7 @@ pub async fn execute(ctx: &Context, cmd: MarketCommand) -> Result<()> {
     }
 }
 
-/// POST /trader/{router}/{version}/market/price
+/// POST /trader/{router}/{api}/market/price
 async fn price(ctx: &Context, address: &str, chain: Option<String>) -> Result<()> {
     let chain_index = chain
         .map(|c| crate::chains::resolve_chain(&c).to_string())
@@ -293,7 +293,7 @@ async fn price(ctx: &Context, address: &str, chain: Option<String>) -> Result<()
     Ok(())
 }
 
-/// POST /trader/{router}/{version}/market/price — batch query
+/// POST /trader/{router}/{api}/market/price — batch query
 async fn prices(ctx: &Context, tokens: &str, chain: Option<String>) -> Result<()> {
     let default_chain = chain
         .map(|c| crate::chains::resolve_chain(&c).to_string())
@@ -319,7 +319,7 @@ async fn prices(ctx: &Context, tokens: &str, chain: Option<String>) -> Result<()
     Ok(())
 }
 
-/// GET /trader/{router}/{version}/market/trades
+/// GET /trader/{router}/{api}/market/trades
 async fn trades(ctx: &Context, address: &str, chain: Option<String>, limit: &str) -> Result<()> {
     let chain_index = chain
         .map(|c| crate::chains::resolve_chain(&c).to_string())
@@ -339,7 +339,7 @@ async fn trades(ctx: &Context, address: &str, chain: Option<String>, limit: &str
     Ok(())
 }
 
-/// GET /trader/{router}/{version}/market/kline
+/// GET /trader/{router}/{api}/market/kline
 async fn kline(
     ctx: &Context,
     address: &str,
@@ -366,7 +366,7 @@ async fn kline(
     Ok(())
 }
 
-/// POST /trader/{router}/{version}/market/current-price
+/// POST /trader/{router}/{api}/market/current-price
 async fn index(ctx: &Context, address: &str, chain: Option<String>) -> Result<()> {
     let chain_index = chain
         .map(|c| crate::chains::resolve_chain(&c).to_string())
@@ -381,7 +381,7 @@ async fn index(ctx: &Context, address: &str, chain: Option<String>) -> Result<()
     Ok(())
 }
 
-/// GET /trader/{router}/{version}/market/signal-chains
+/// GET /trader/{router}/{api}/market/signal-chains
 async fn signal_chains(ctx: &Context) -> Result<()> {
     let client = ctx.client()?;
     let data = client.get("/market/signal-chains", &[]).await?;
@@ -389,7 +389,7 @@ async fn signal_chains(ctx: &Context) -> Result<()> {
     Ok(())
 }
 
-/// POST /trader/{router}/{version}/market/signal-list
+/// POST /trader/{router}/{api}/market/signal-list
 #[allow(clippy::too_many_arguments)]
 async fn signal_list(
     ctx: &Context,
@@ -447,7 +447,7 @@ async fn signal_list(
     Ok(())
 }
 
-/// GET /trader/{router}/{version}/market/memepump-chains
+/// GET /trader/{router}/{api}/market/memepump-chains
 async fn memepump_chains(ctx: &Context) -> Result<()> {
     let client = ctx.client()?;
     let data = client.get("/market/memepump-chains", &[]).await?;
@@ -472,7 +472,7 @@ struct MemepumpTokenListParams {
     max_tx_count: Option<String>,
 }
 
-/// GET /trader/{router}/{version}/market/memepump-tokens
+/// GET /trader/{router}/{api}/market/memepump-tokens
 async fn memepump_token_list(ctx: &Context, params: MemepumpTokenListParams) -> Result<()> {
     let chain_index = crate::chains::resolve_chain(&params.chain).to_string();
     let client = ctx.client()?;

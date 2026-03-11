@@ -25,19 +25,19 @@ AI coding assistant skills for crypto news, social media, and trading operations
 
 ## Prerequisites
 
-All skills require an API token from the 6551 platform. Get your token at: https://6551.io/mcp
+All skills require an API token from the 6551 platform.
 
-### Environment Variable (Recommended)
+### API Token Setup
 
-```bash
-export OPEN_TOKEN="your-token-here"
-```
-
-Or add to your `.env` file:
+Find or create a `.env` file in the project root to override the default API credentials. Load it before performing opentrade operations.
 
 ```bash
-OPEN_TOKEN=your-token-here
+OPEN_TOKEN=your_token_here
 ```
+
+Get your API token at: https://6551.io/mcp
+
+**Security warning**: Never commit `.env` to git (add it to `.gitignore`) and never expose credentials in logs, screenshots, or chat messages.
 
 ### Config File (Alternative)
 
@@ -55,9 +55,7 @@ mkdir $env:APPDATA\openskills
 echo '{"token": "your-token-here"}' > $env:APPDATA\openskills\credentials.json
 ```
 
-**Priority:** Environment variable (`OPEN_TOKEN`) takes precedence over config file.
-
-**Security warning**: Never commit tokens to git (add `.env` to `.gitignore`) and never expose credentials in logs, screenshots, or chat messages.
+**Priority:** `.env` file takes precedence over config file.
 
 ## Installation
 

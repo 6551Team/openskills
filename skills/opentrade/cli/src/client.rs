@@ -15,9 +15,12 @@ pub struct ApiClient {
 impl ApiClient {
     pub fn new(base_url_override: Option<&str>, trader: &str, version: &str) -> Result<Self> {
         let token = std::env::var("OPEN_TOKEN").context(
-            "OPEN_TOKEN not set. Get your token at https://6551.io/mcp and set it via:\n\
-             export OPEN_TOKEN=\"your-token\"\n\
-             Or create ~/.config/openskills/credentials.json with {\"token\": \"your-token\"}",
+            "Find or create a .env file in the project root to override the default API credentials, Load it before performing opentrade operations.
+  ```bash
+  OPEN_TOKEN=your_token_here
+  ```
+
+  Get your API token at: https://6551.io/mcp",
         )?;
 
         let base_url = base_url_override

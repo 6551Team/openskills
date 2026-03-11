@@ -9,9 +9,8 @@ set -e
 #
 # Behavior:
 #   - Fresh install: detect platform, download latest binary, verify, install.
-#   - Already installed: skip if the same version was verified within the
-#     last 12 hours (cache at ~/.opentrade/last_check). Otherwise, compare the
-#     local version with the latest GitHub release and upgrade if needed.
+#   - Already installed: compare local version with latest GitHub release
+#     and upgrade if needed.
 #
 # Supported platforms:
 #   macOS  : x86_64 (Intel), arm64 (Apple Silicon)
@@ -21,9 +20,6 @@ set -e
 REPO="6551Team/openskills"
 BINARY="opentrade"
 INSTALL_DIR="$HOME/.local/bin"
-CACHE_DIR="$HOME/.opentrade"
-CACHE_FILE="$CACHE_DIR/last_check"
-CACHE_TTL=43200  # 12 hours in seconds
 
 # Detect OS and CPU architecture, return matching Rust target triple
 get_target() {
@@ -49,20 +45,6 @@ get_target() {
       ;;
     *) echo "Unsupported OS" >&2; exit 1 ;;
   esac
-}
-
-is_cache_fresh() {
-  [ -f "$CACHE_FILE" ] || return 1
-  cached_ts=$(cat "$CACHE_FILE" 2>/dev/null | head -1)
-  [ -z "$cached_ts" ] && return 1
-  now=$(date +%s)
-  elapsed=$((now - cached_ts))
-  [ "$elapsed" -lt "$CACHE_TTL" ]
-}
-
-write_cache() {
-  mkdir -p "$CACHE_DIR"
-  date +%s > "$CACHE_FILE"
 }
 
 get_local_version() {
@@ -175,12 +157,6 @@ ensure_in_path() {
 main() {
   local_ver=$(get_local_version)
 
-  # Fast path: already installed and checked within the last 12 hours
-  if [ -n "$local_ver" ] && is_cache_fresh; then
-    echo "${BINARY} ${local_ver} is already installed (update check skipped, checked recently)."
-    return 0
-  fi
-
   # Fetch latest release tag from GitHub API
   tag=$(curl -sSf "https://api.github.com/repos/${REPO}/releases/latest" | grep '"tag_name"' | cut -d'"' -f4)
   if [ -z "$tag" ]; then
@@ -192,7 +168,6 @@ main() {
 
   if [ -n "$local_ver" ] && [ "$local_ver" = "$latest_ver" ]; then
     echo "${BINARY} ${local_ver} is already up to date."
-    write_cache
     return 0
   fi
 
@@ -201,7 +176,6 @@ main() {
   fi
 
   install_binary "$tag"
-  write_cache
   ensure_in_path
   echo "Run '${BINARY} --help' to get started."
 }

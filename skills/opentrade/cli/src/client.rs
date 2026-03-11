@@ -127,7 +127,20 @@ impl ApiClient {
 
         let body: Value = resp.json().await.context("failed to parse response")?;
 
-        // Check for code field
+        // Check for success field (boolean)
+        if let Some(success) = body.get("success").and_then(|v| v.as_bool()) {
+            if !success {
+                let msg = body
+                    .get("msg")
+                    .or_else(|| body.get("message"))
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("unknown error");
+                bail!("API error: {}", msg);
+            }
+            return Ok(body.get("data").cloned().unwrap_or(body));
+        }
+
+        // Check for code field (string)
         if let Some(code) = body.get("code").and_then(|v| v.as_str()) {
             if code != "0" {
                 let msg = body
@@ -140,7 +153,7 @@ impl ApiClient {
             return Ok(body.get("data").cloned().unwrap_or(body));
         }
 
-        // Fallback: return the whole body if no code field
+        // Fallback: return the whole body if no success/code field
         Ok(body)
     }
 }

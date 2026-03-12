@@ -57,6 +57,12 @@ echo '{"token": "your-token-here"}' > $env:APPDATA\openskills\credentials.json
 
 **Priority:** `.env` file takes precedence over config file.
 
+All requests require Bearer token authentication:
+
+```bash
+Authorization: Bearer $OPEN_TOKEN
+```
+
 ## Installation
 
 ### Recommended
@@ -122,18 +128,6 @@ The skills work together in typical crypto workflows:
 ## API Base URL
 
 All skills use the base URL: `https://ai.6551.io`
-
-## Authentication
-
-All requests require Bearer token authentication:
-
-```bash
-Authorization: Bearer $OPEN_TOKEN
-```
-
-The token can be provided via:
-1. Environment variable: `OPEN_TOKEN`
-2. Config file: `~/.config/openskills/credentials.json` (macOS/Linux) or `%APPDATA%\openskills\credentials.json` (Windows)
 
 ## Response Format
 

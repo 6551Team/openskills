@@ -184,7 +184,7 @@ All API responses follow this format:
 
 ## License
 
-Apache-2.0
+MIT
 
 ## Support
 

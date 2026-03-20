@@ -4,13 +4,14 @@ A collection of skills for interacting with OKX DEX aggregator APIs via the 6551
 
 ## Overview
 
-OpenTrade provides 5 specialized skills for comprehensive blockchain trading operations:
+OpenTrade provides 6 specialized skills for comprehensive blockchain trading operations:
 
 1. **opentrade-dex-swap** - DEX swap operations (quote, swap, approve, liquidity)
 2. **opentrade-transaction** - Transaction management (gas, simulation, broadcast, tracking)
 3. **opentrade-portfolio** - Wallet / Portfolio operations (balances, portfolio value, transaction history)
 4. **opentrade-market** - Market data (prices, K-line, trades, smart money signals)
 5. **opentrade-token** - Token information (search, info, holders, trending)
+6. **opentrade-wallet** - Custodial wallet management (create wallet, get account, swap, withdraw). Supports BSC and Solana only.
 
 ## Quick Start
 
@@ -124,6 +125,41 @@ Discover and analyze tokens.
 ```bash
 curl -s -H "Authorization: Bearer $OPEN_TOKEN" \
   "https://ai.6551.io/open/trader/{router}/{version}/token/search?chains=1,501&search=USDC"
+```
+
+### 🔐 opentrade-wallet
+
+Manage custodial wallets powered by [Turnkey](https://www.turnkey.com/). **Only supports BSC and Solana networks.**
+
+**Security Architecture:**
+- Private keys are managed by **Turnkey** with **AWS KMS** (Key Management Service) as delegated custody
+- **6551 does NOT store your private keys** — all signing operations are performed within Turnkey's secure infrastructure backed by AWS KMS
+- Your wallet is non-extractable: no one (including 6551) can export the raw private key
+
+**Key Features:**
+- Create custodial wallet (BSC + Solana addresses)
+- Get custodial account info
+- Execute DEX swap (auto-sign + broadcast)
+- Withdraw native tokens (BNB on BSC, SOL on Solana)
+
+> **Note**: Newly created wallets have zero balance. You must deposit **BNB** (BSC network) or **SOL** (Solana network) before trading. Do NOT send tokens from other chains — funds will be lost.
+
+**Example:**
+```bash
+# Create custodial wallet
+curl -s -X POST -H "Authorization: Bearer $OPEN_TOKEN" \
+  -H "Content-Type: application/json" \
+  "https://ai.6551.io/trader/custodial/create"
+
+# Get account
+curl -s -H "Authorization: Bearer $OPEN_TOKEN" \
+  "https://ai.6551.io/trader/custodial/account"
+
+# Withdraw 1 BNB
+curl -s -X POST -H "Authorization: Bearer $OPEN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"network":"bsc","to":"0xRecipient","amount":1000000000000000000}' \
+  "https://ai.6551.io/trader/custodial/withdraw"
 ```
 
 ## Common Workflows

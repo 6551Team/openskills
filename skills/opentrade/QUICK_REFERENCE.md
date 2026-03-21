@@ -28,6 +28,7 @@ https://ai.6551.io/open/trader/{router}/{version}
 | opentrade-portfolio | 💰 | 4 | Check balances |
 | opentrade-market | 📊 | 9 | Market data |
 | opentrade-token | 🪙 | 5 | Token info |
+| opentrade-newsliquid | 📈 | 29 | CEX trading (spot, futures, leverage, orders, positions) |
 
 ## Common Commands
 
@@ -181,6 +182,36 @@ curl -s -H "Authorization: Bearer $OPEN_TOKEN" \
 # 3. Get transaction history
 curl -s -H "Authorization: Bearer $OPEN_TOKEN" \
   "https://ai.6551.io/open/trader/{router}/{version}/wallet/address-transactions?address=0x...&chainIndex=1&limit=20"
+```
+
+### CEX Trading (Newsliquid)
+
+```bash
+BASE_URL="https://ai.6551.io"
+
+# 1. Get ticker
+curl -s -H "Authorization: Bearer $OPEN_TOKEN" \
+  "$BASE_URL/trader/newsliquid/v1/market/ticker?symbol=BTCUSDT&exchangeId=binance"
+
+# 2. Check account balance
+curl -s -H "Authorization: Bearer $OPEN_TOKEN" \
+  "$BASE_URL/trader/newsliquid/v1/account/summary?exchangeId=binance"
+
+# 3. Place limit order
+curl -s -X POST -H "Authorization: Bearer $OPEN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"symbol":"BTCUSDT","side":"buy","type":"limit","quantity":"0.001","price":"60000","exchangeId":"binance"}' \
+  "$BASE_URL/trader/newsliquid/v1/orders"
+
+# 4. Check positions
+curl -s -H "Authorization: Bearer $OPEN_TOKEN" \
+  "$BASE_URL/trader/newsliquid/v1/positions?exchangeId=binance"
+
+# 5. Close position
+curl -s -X POST -H "Authorization: Bearer $OPEN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"symbol":"BTCUSDT","exchangeId":"binance"}' \
+  "$BASE_URL/trader/newsliquid/v1/positions/close"
 ```
 
 ## Tips

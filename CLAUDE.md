@@ -14,7 +14,8 @@ openskills/
 │       ├── opentrade-transaction/   # Transaction tracking
 │       ├── opentrade-portfolio/      # Portfolio management
 │       ├── opentrade-market/        # Market data
-│       └── opentrade-token/         # Token search
+│       ├── opentrade-token/         # Token search
+│       └── opentrade-newsliquid/    # CEX trading (spot, futures, leverage)
 ├── README.md
 ├── LICENSE
 └── .env.example
@@ -32,6 +33,7 @@ openskills/
 - **opentrade-portfolio**: Portfolio balance and value management
 - **opentrade-market**: Market data (prices, liquidity, token search)
 - **opentrade-token**: Token discovery (search, info, holders, trending)
+- **opentrade-newsliquid**: CEX trading via Newsliquid gateway (spot & futures orders, positions, leverage, account, wallet agent)
 
 ## Authentication
 
@@ -80,6 +82,13 @@ All skills use: `https://ai.6551.io`
 2. Check Twitter sentiment (`opentwitter`)
 3. Research token (`opentrade-market`)
 4. Execute trade (`opentrade-dex-swap` + `opentrade-transaction`)
+
+### CEX Trading Flow
+1. Check ticker (`opentrade-newsliquid`)
+2. Check account balance (`opentrade-newsliquid`)
+3. Place order (`opentrade-newsliquid`)
+4. Monitor positions (`opentrade-newsliquid`)
+5. Close position (`opentrade-newsliquid`)
 
 ## Development Guidelines
 

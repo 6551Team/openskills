@@ -4,7 +4,7 @@ A collection of skills for interacting with OKX DEX aggregator APIs via the 6551
 
 ## Overview
 
-OpenTrade provides 6 specialized skills for comprehensive blockchain trading operations:
+OpenTrade provides 7 specialized skills for comprehensive blockchain trading operations:
 
 1. **opentrade-dex-swap** - DEX swap operations (quote, swap, approve, liquidity)
 2. **opentrade-transaction** - Transaction management (gas, simulation, broadcast, tracking)
@@ -12,6 +12,7 @@ OpenTrade provides 6 specialized skills for comprehensive blockchain trading ope
 4. **opentrade-market** - Market data (prices, K-line, trades, smart money signals)
 5. **opentrade-token** - Token information (search, info, holders, trending)
 6. **opentrade-wallet** - Custodial wallet management (create wallet, get account, swap, withdraw). Supports BSC and Solana only.
+7. **opentrade-newsliquid** - CEX trading via Newsliquid gateway (spot & futures orders, positions, leverage, account management, wallet agent). Server-side execution with built-in risk controls.
 
 ## Quick Start
 
@@ -160,6 +161,36 @@ curl -s -X POST -H "Authorization: Bearer $OPEN_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"network":"bsc","to":"0xRecipient","amount":1000000000000000000}' \
   "https://ai.6551.io/trader/custodial/withdraw"
+```
+
+### 📈 opentrade-newsliquid
+
+CEX (centralized exchange) trading via the Newsliquid gateway. Server-side execution with built-in risk controls — no private key management required.
+
+**Key Features:**
+- Market data: ticker, K-lines, trading pair metadata
+- Account management: balance summary, spot assets
+- Order management: place/edit/cancel limit, market, stop-loss, take-profit orders
+- Position management: view, close, historical positions
+- Leverage & margin: set leverage, margin mode, position mode
+- Wallet agent: create and manage wallet agents for CEX↔chain fund transfers
+- Built-in 4-layer risk engine (price deviation, position limit, rate limit, balance check)
+
+**Example:**
+```bash
+# Get BTC ticker
+curl -s -H "Authorization: Bearer $OPEN_TOKEN" \
+  "https://ai.6551.io/trader/newsliquid/v1/market/ticker?symbol=BTCUSDT&exchangeId=binance"
+
+# Place a limit buy order
+curl -s -X POST -H "Authorization: Bearer $OPEN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"symbol":"BTCUSDT","side":"buy","type":"limit","quantity":"0.001","price":"60000","exchangeId":"binance"}' \
+  "https://ai.6551.io/trader/newsliquid/v1/orders"
+
+# Check positions
+curl -s -H "Authorization: Bearer $OPEN_TOKEN" \
+  "https://ai.6551.io/trader/newsliquid/v1/positions?exchangeId=binance"
 ```
 
 ## Common Workflows

@@ -180,17 +180,17 @@ CEX (centralized exchange) trading via the Newsliquid gateway. Server-side execu
 ```bash
 # Get BTC ticker
 curl -s -H "Authorization: Bearer $OPEN_TOKEN" \
-  "https://ai.6551.io/trader/newsliquid/v1/market/ticker?symbol=BTCUSDT&exchangeId=binance"
+  "https://ai.6551.io/open/trader/newsliquid/v1/market/ticker?symbol=BTCUSDT&exchangeId=binance"
 
 # Place a limit buy order
 curl -s -X POST -H "Authorization: Bearer $OPEN_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"symbol":"BTCUSDT","side":"buy","type":"limit","quantity":"0.001","price":"60000","exchangeId":"binance"}' \
-  "https://ai.6551.io/trader/newsliquid/v1/orders"
+  "https://ai.6551.io/open/trader/newsliquid/v1/orders"
 
 # Check positions
 curl -s -H "Authorization: Bearer $OPEN_TOKEN" \
-  "https://ai.6551.io/trader/newsliquid/v1/positions?exchangeId=binance"
+  "https://ai.6551.io/open/trader/newsliquid/v1/positions?exchangeId=binance"
 ```
 
 ## Common Workflows

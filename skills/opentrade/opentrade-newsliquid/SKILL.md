@@ -59,28 +59,28 @@ Every time before running any newsliquid command, always follow these steps in o
 
 ```bash
 # 1. Get real-time ticker
-curl -s "$BASE_URL/trader/newsliquid/v1/market/ticker?symbol=BTC/USDT&exchangeId=binance" \
+curl -s "$BASE_URL/open/trader/newsliquid/v1/market/ticker?symbol=BTC/USDT&exchangeId=binance" \
   -H "$AUTH_HEADER"
 
 # 2. Check account balance
-curl -s "$BASE_URL/trader/newsliquid/v1/account/summary?exchangeId=binance&symbol=BTC/USDT:USDT" \
+curl -s "$BASE_URL/open/trader/newsliquid/v1/account/summary?exchangeId=binance&symbol=BTC/USDT:USDT" \
   -H "$AUTH_HEADER"
 
 # 3. Place a limit buy order
-curl -s -X POST "$BASE_URL/trader/newsliquid/v1/orders" \
+curl -s -X POST "$BASE_URL/open/trader/newsliquid/v1/orders" \
   -H "$AUTH_HEADER" -H "Content-Type: application/json" \
   -d '{"symbol":"BTC/USDT:USDT","side":"buy","type":"limit","quantity":0.001,"price":60000,"exchangeId":"binance"}'
 
 # 4. Check open orders
-curl -s "$BASE_URL/trader/newsliquid/v1/orders/open?exchangeId=binance" \
+curl -s "$BASE_URL/open/trader/newsliquid/v1/orders/open?exchangeId=binance" \
   -H "$AUTH_HEADER"
 
 # 5. Check current positions
-curl -s "$BASE_URL/trader/newsliquid/v1/positions?exchangeId=binance" \
+curl -s "$BASE_URL/open/trader/newsliquid/v1/positions?exchangeId=binance" \
   -H "$AUTH_HEADER"
 
 # 6. Close a position (market price)
-curl -s -X POST "$BASE_URL/trader/newsliquid/v1/positions/close" \
+curl -s -X POST "$BASE_URL/open/trader/newsliquid/v1/positions/close" \
   -H "$AUTH_HEADER" -H "Content-Type: application/json" \
   -d '{"symbol":"BTC/USDT:USDT","side":"long","quantity":0,"exchangeId":"binance"}'
 ```
@@ -93,70 +93,70 @@ curl -s -X POST "$BASE_URL/trader/newsliquid/v1/positions/close" \
 
 | # | Endpoint | Method | Description |
 |---|---|---|---|
-| 1 | `/trader/newsliquid/v1/market/metadata` | GET | Get market metadata (trading pairs, precision, limits) |
-| 2 | `/trader/newsliquid/v1/market/ticker` | GET | Get real-time ticker (last price, 24h change, volume) |
-| 3 | `/trader/newsliquid/v1/market/klines` | GET | Get K-line / candlestick data |
-| 4 | `/trader/newsliquid/v1/market/base-currencies` | GET | Get base currency list (USDT, BTC, etc.) |
-| 5 | `/trader/newsliquid/v1/market/time` | GET | Get server time |
+| 1 | `/open/trader/newsliquid/v1/market/metadata` | GET | Get market metadata (trading pairs, precision, limits) |
+| 2 | `/open/trader/newsliquid/v1/market/ticker` | GET | Get real-time ticker (last price, 24h change, volume) |
+| 3 | `/open/trader/newsliquid/v1/market/klines` | GET | Get K-line / candlestick data |
+| 4 | `/open/trader/newsliquid/v1/market/base-currencies` | GET | Get base currency list (USDT, BTC, etc.) |
+| 5 | `/open/trader/newsliquid/v1/market/time` | GET | Get server time |
 
 ### Account (no risk control)
 
 | # | Endpoint | Method | Description |
 |---|---|---|---|
-| 6 | `/trader/newsliquid/v1/account/summary` | GET | Account summary (balance, leverage, max position) |
-| 7 | `/trader/newsliquid/v1/account/spot` | GET | Query specific spot asset |
-| 8 | `/trader/newsliquid/v1/account/spots` | GET | Query all spot assets |
+| 6 | `/open/trader/newsliquid/v1/account/summary` | GET | Account summary (balance, leverage, max position) |
+| 7 | `/open/trader/newsliquid/v1/account/spot` | GET | Query specific spot asset |
+| 8 | `/open/trader/newsliquid/v1/account/spots` | GET | Query all spot assets |
 
 ### Config (no risk control)
 
 | # | Endpoint | Method | Description |
 |---|---|---|---|
-| 9 | `/trader/newsliquid/v1/config` | GET | Get trading config |
-| 10 | `/trader/newsliquid/v1/config` | PUT | Update trading config |
+| 9 | `/open/trader/newsliquid/v1/config` | GET | Get trading config |
+| 10 | `/open/trader/newsliquid/v1/config` | PUT | Update trading config |
 
 ### Orders (risk control on create/edit)
 
 | # | Endpoint | Method | Risk | Description |
 |---|---|---|---|---|
-| 11 | `/trader/newsliquid/v1/orders` | POST | Yes | Place order (limit/market/stop-loss/take-profit) |
-| 12 | `/trader/newsliquid/v1/orders/edit` | PUT | Yes | Edit existing order |
-| 13 | `/trader/newsliquid/v1/orders/:orderId` | DELETE | No | Cancel order |
-| 14 | `/trader/newsliquid/v1/orders/open` | GET | No | List open orders |
-| 15 | `/trader/newsliquid/v1/orders/closed` | GET | No | List closed orders |
+| 11 | `/open/trader/newsliquid/v1/orders` | POST | Yes | Place order (limit/market/stop-loss/take-profit) |
+| 12 | `/open/trader/newsliquid/v1/orders/edit` | PUT | Yes | Edit existing order |
+| 13 | `/open/trader/newsliquid/v1/orders/:orderId` | DELETE | No | Cancel order |
+| 14 | `/open/trader/newsliquid/v1/orders/open` | GET | No | List open orders |
+| 15 | `/open/trader/newsliquid/v1/orders/closed` | GET | No | List closed orders |
 
 ### Positions (risk control on close)
 
 | # | Endpoint | Method | Risk | Description |
 |---|---|---|---|---|
-| 16 | `/trader/newsliquid/v1/positions` | GET | No | List current positions |
-| 17 | `/trader/newsliquid/v1/positions/history` | GET | No | List historical positions |
-| 18 | `/trader/newsliquid/v1/positions/close` | POST | Yes | Close position (market price) |
+| 16 | `/open/trader/newsliquid/v1/positions` | GET | No | List current positions |
+| 17 | `/open/trader/newsliquid/v1/positions/history` | GET | No | List historical positions |
+| 18 | `/open/trader/newsliquid/v1/positions/close` | POST | Yes | Close position (market price) |
 
 ### Trades (no risk control)
 
 | # | Endpoint | Method | Description |
 |---|---|---|---|
-| 19 | `/trader/newsliquid/v1/trades/history` | GET | Get trade execution history |
+| 19 | `/open/trader/newsliquid/v1/trades/history` | GET | Get trade execution history |
 
 ### Leverage & Margin (risk control on leverage change)
 
 | # | Endpoint | Method | Risk | Description |
 |---|---|---|---|---|
-| 20 | `/trader/newsliquid/v1/leverage` | GET | No | Get available leverage tiers |
-| 21 | `/trader/newsliquid/v1/leverage/current` | GET | No | Get current leverage setting |
-| 22 | `/trader/newsliquid/v1/leverage/current` | PUT | Yes | Set leverage multiplier |
-| 23 | `/trader/newsliquid/v1/margin/mode` | GET | No | Get margin mode |
-| 24 | `/trader/newsliquid/v1/position/mode` | GET | No | Get position mode (one-way/hedge) |
-| 25 | `/trader/newsliquid/v1/position/mode` | PUT | No | Set position mode |
+| 20 | `/open/trader/newsliquid/v1/leverage` | GET | No | Get available leverage tiers |
+| 21 | `/open/trader/newsliquid/v1/leverage/current` | GET | No | Get current leverage setting |
+| 22 | `/open/trader/newsliquid/v1/leverage/current` | PUT | Yes | Set leverage multiplier |
+| 23 | `/open/trader/newsliquid/v1/margin/mode` | GET | No | Get margin mode |
+| 24 | `/open/trader/newsliquid/v1/position/mode` | GET | No | Get position mode (one-way/hedge) |
+| 25 | `/open/trader/newsliquid/v1/position/mode` | PUT | No | Set position mode |
 
 ### Wallet Agent (no risk control)
 
 | # | Endpoint | Method | Description |
 |---|---|---|---|
-| 26 | `/trader/newsliquid/v1/walletagent/create` | POST | Create wallet agent |
-| 27 | `/trader/newsliquid/v1/walletagent/list` | GET | List wallet agents |
-| 28 | `/trader/newsliquid/v1/walletagent/address/:address` | GET | Query wallet agent by address |
-| 29 | `/trader/newsliquid/v1/walletagent/authorize` | PUT | Authorize wallet agent |
+| 26 | `/open/trader/newsliquid/v1/walletagent/create` | POST | Create wallet agent |
+| 27 | `/open/trader/newsliquid/v1/walletagent/list` | GET | List wallet agents |
+| 28 | `/open/trader/newsliquid/v1/walletagent/address/:address` | GET | Query wallet agent by address |
+| 29 | `/open/trader/newsliquid/v1/walletagent/authorize` | PUT | Authorize wallet agent |
 
 ## API Reference
 
@@ -165,7 +165,7 @@ curl -s -X POST "$BASE_URL/trader/newsliquid/v1/positions/close" \
 获取指定交易对在所有交易所的市场元数据信息（交易对列表、合约类型、杠杆范围、最小下单量等）。
 
 ```bash
-curl -s "$BASE_URL/trader/newsliquid/v1/market/metadata?ticker=BTC" \
+curl -s "$BASE_URL/open/trader/newsliquid/v1/market/metadata?ticker=BTC" \
   -H "$AUTH_HEADER"
 ```
 
@@ -221,7 +221,7 @@ curl -s "$BASE_URL/trader/newsliquid/v1/market/metadata?ticker=BTC" \
 获取指定交易所和交易对的实时行情数据。
 
 ```bash
-curl -s "$BASE_URL/trader/newsliquid/v1/market/ticker?symbol=BTC/USDT&exchangeId=binance" \
+curl -s "$BASE_URL/open/trader/newsliquid/v1/market/ticker?symbol=BTC/USDT&exchangeId=binance" \
   -H "$AUTH_HEADER"
 ```
 
@@ -262,7 +262,7 @@ curl -s "$BASE_URL/trader/newsliquid/v1/market/ticker?symbol=BTC/USDT&exchangeId
 获取 Binance K 线（蜡烛图）数据。
 
 ```bash
-curl -s "$BASE_URL/trader/newsliquid/v1/market/klines?symbol=BTCUSDT&interval=1h&limit=100" \
+curl -s "$BASE_URL/open/trader/newsliquid/v1/market/klines?symbol=BTCUSDT&interval=1h&limit=100" \
   -H "$AUTH_HEADER"
 ```
 
@@ -304,7 +304,7 @@ curl -s "$BASE_URL/trader/newsliquid/v1/market/klines?symbol=BTCUSDT&interval=1h
 获取所有交易所支持的去重基础币种列表。
 
 ```bash
-curl -s "$BASE_URL/trader/newsliquid/v1/market/base-currencies" \
+curl -s "$BASE_URL/open/trader/newsliquid/v1/market/base-currencies" \
   -H "$AUTH_HEADER"
 ```
 
@@ -326,7 +326,7 @@ curl -s "$BASE_URL/trader/newsliquid/v1/market/base-currencies" \
 获取 ai-bots-trading 服务器的当前时间。
 
 ```bash
-curl -s "$BASE_URL/trader/newsliquid/v1/market/time" \
+curl -s "$BASE_URL/open/trader/newsliquid/v1/market/time" \
   -H "$AUTH_HEADER"
 ```
 
@@ -348,7 +348,7 @@ curl -s "$BASE_URL/trader/newsliquid/v1/market/time" \
 获取指定交易所的账户余额摘要信息，包括总余额、可用余额、杠杆分析等。
 
 ```bash
-curl -s "$BASE_URL/trader/newsliquid/v1/account/summary?exchangeId=binance&symbol=BTC/USDT:USDT&accountType=swap" \
+curl -s "$BASE_URL/open/trader/newsliquid/v1/account/summary?exchangeId=binance&symbol=BTC/USDT:USDT&accountType=swap" \
   -H "$AUTH_HEADER"
 ```
 
@@ -414,7 +414,7 @@ curl -s "$BASE_URL/trader/newsliquid/v1/account/summary?exchangeId=binance&symbo
 查询指定交易所和交易对的现货资产持有信息。
 
 ```bash
-curl -s "$BASE_URL/trader/newsliquid/v1/account/spot?exchangeId=binance&symbol=BTC/USDT" \
+curl -s "$BASE_URL/open/trader/newsliquid/v1/account/spot?exchangeId=binance&symbol=BTC/USDT" \
   -H "$AUTH_HEADER"
 ```
 
@@ -454,7 +454,7 @@ curl -s "$BASE_URL/trader/newsliquid/v1/account/spot?exchangeId=binance&symbol=B
 获取指定交易所的所有现货资产列表。
 
 ```bash
-curl -s "$BASE_URL/trader/newsliquid/v1/account/spots?exchangeId=binance" \
+curl -s "$BASE_URL/open/trader/newsliquid/v1/account/spots?exchangeId=binance" \
   -H "$AUTH_HEADER"
 ```
 
@@ -505,7 +505,7 @@ curl -s "$BASE_URL/trader/newsliquid/v1/account/spots?exchangeId=binance" \
 获取用户的交易配置摘要（不包含密钥敏感信息）。
 
 ```bash
-curl -s "$BASE_URL/trader/newsliquid/v1/config" \
+curl -s "$BASE_URL/open/trader/newsliquid/v1/config" \
   -H "$AUTH_HEADER"
 ```
 
@@ -543,7 +543,7 @@ curl -s "$BASE_URL/trader/newsliquid/v1/config" \
 > **IMPORTANT**: Exchange API credentials (`apiKey`, `secret`, `password`) are sensitive. Never log or display them.
 
 ```bash
-curl -s -X PUT "$BASE_URL/trader/newsliquid/v1/config" \
+curl -s -X PUT "$BASE_URL/open/trader/newsliquid/v1/config" \
   -H "$AUTH_HEADER" -H "Content-Type: application/json" \
   -d '{
     "defaultExchange": "binance",
@@ -588,7 +588,7 @@ curl -s -X PUT "$BASE_URL/trader/newsliquid/v1/config" \
 
 ```bash
 # Limit order: buy 0.01 BTC at $65,000 with TP/SL
-curl -s -X POST "$BASE_URL/trader/newsliquid/v1/orders" \
+curl -s -X POST "$BASE_URL/open/trader/newsliquid/v1/orders" \
   -H "$AUTH_HEADER" -H "Content-Type: application/json" \
   -d '{
     "exchangeId": "binance",
@@ -602,7 +602,7 @@ curl -s -X POST "$BASE_URL/trader/newsliquid/v1/orders" \
   }'
 
 # Market order: sell 0.5 ETH
-curl -s -X POST "$BASE_URL/trader/newsliquid/v1/orders" \
+curl -s -X POST "$BASE_URL/open/trader/newsliquid/v1/orders" \
   -H "$AUTH_HEADER" -H "Content-Type: application/json" \
   -d '{
     "exchangeId": "binance",
@@ -613,7 +613,7 @@ curl -s -X POST "$BASE_URL/trader/newsliquid/v1/orders" \
   }'
 
 # Stop-loss market order
-curl -s -X POST "$BASE_URL/trader/newsliquid/v1/orders" \
+curl -s -X POST "$BASE_URL/open/trader/newsliquid/v1/orders" \
   -H "$AUTH_HEADER" -H "Content-Type: application/json" \
   -d '{
     "exchangeId": "binance",
@@ -698,7 +698,7 @@ curl -s -X POST "$BASE_URL/trader/newsliquid/v1/orders" \
 **This endpoint is protected by the risk engine.**
 
 ```bash
-curl -s -X PUT "$BASE_URL/trader/newsliquid/v1/orders/edit" \
+curl -s -X PUT "$BASE_URL/open/trader/newsliquid/v1/orders/edit" \
   -H "$AUTH_HEADER" -H "Content-Type: application/json" \
   -d '{
     "exchangeId": "binance",
@@ -736,7 +736,7 @@ curl -s -X PUT "$BASE_URL/trader/newsliquid/v1/orders/edit" \
 取消指定的挂单。
 
 ```bash
-curl -s -X DELETE "$BASE_URL/trader/newsliquid/v1/orders/123456789?exchangeId=binance&symbol=BTC/USDT:USDT" \
+curl -s -X DELETE "$BASE_URL/open/trader/newsliquid/v1/orders/123456789?exchangeId=binance&symbol=BTC/USDT:USDT" \
   -H "$AUTH_HEADER"
 ```
 
@@ -767,7 +767,7 @@ curl -s -X DELETE "$BASE_URL/trader/newsliquid/v1/orders/123456789?exchangeId=bi
 获取当前所有未成交的挂单。
 
 ```bash
-curl -s "$BASE_URL/trader/newsliquid/v1/orders/open?exchangeId=binance&symbol=BTC/USDT:USDT" \
+curl -s "$BASE_URL/open/trader/newsliquid/v1/orders/open?exchangeId=binance&symbol=BTC/USDT:USDT" \
   -H "$AUTH_HEADER"
 ```
 
@@ -815,7 +815,7 @@ curl -s "$BASE_URL/trader/newsliquid/v1/orders/open?exchangeId=binance&symbol=BT
 获取已完成（成交/取消）的历史订单。
 
 ```bash
-curl -s "$BASE_URL/trader/newsliquid/v1/orders/closed?exchangeId=binance&symbol=BTC/USDT:USDT&days=7" \
+curl -s "$BASE_URL/open/trader/newsliquid/v1/orders/closed?exchangeId=binance&symbol=BTC/USDT:USDT&days=7" \
   -H "$AUTH_HEADER"
 ```
 
@@ -836,7 +836,7 @@ curl -s "$BASE_URL/trader/newsliquid/v1/orders/closed?exchangeId=binance&symbol=
 获取当前所有持仓信息。
 
 ```bash
-curl -s "$BASE_URL/trader/newsliquid/v1/positions?exchangeId=binance" \
+curl -s "$BASE_URL/open/trader/newsliquid/v1/positions?exchangeId=binance" \
   -H "$AUTH_HEADER"
 ```
 
@@ -884,7 +884,7 @@ curl -s "$BASE_URL/trader/newsliquid/v1/positions?exchangeId=binance" \
 获取已平仓的历史持仓记录（包含关联的交易明细）。
 
 ```bash
-curl -s "$BASE_URL/trader/newsliquid/v1/positions/history?exchangeId=binance&days=7" \
+curl -s "$BASE_URL/open/trader/newsliquid/v1/positions/history?exchangeId=binance&days=7" \
   -H "$AUTH_HEADER"
 ```
 
@@ -974,7 +974,7 @@ curl -s "$BASE_URL/trader/newsliquid/v1/positions/history?exchangeId=binance&day
 **This endpoint is protected by the risk engine.**
 
 ```bash
-curl -s -X POST "$BASE_URL/trader/newsliquid/v1/positions/close" \
+curl -s -X POST "$BASE_URL/open/trader/newsliquid/v1/positions/close" \
   -H "$AUTH_HEADER" -H "Content-Type: application/json" \
   -d '{
     "exchangeId": "binance",
@@ -1009,7 +1009,7 @@ curl -s -X POST "$BASE_URL/trader/newsliquid/v1/positions/close" \
 获取历史成交记录。
 
 ```bash
-curl -s "$BASE_URL/trader/newsliquid/v1/trades/history?exchangeId=binance&symbol=BTC/USDT:USDT&days=7" \
+curl -s "$BASE_URL/open/trader/newsliquid/v1/trades/history?exchangeId=binance&symbol=BTC/USDT:USDT&days=7" \
   -H "$AUTH_HEADER"
 ```
 
@@ -1056,7 +1056,7 @@ curl -s "$BASE_URL/trader/newsliquid/v1/trades/history?exchangeId=binance&symbol
 获取指定交易对的杠杆档位（梯度）信息。
 
 ```bash
-curl -s "$BASE_URL/trader/newsliquid/v1/leverage?symbol=BTC/USDT:USDT&exchangeId=binance" \
+curl -s "$BASE_URL/open/trader/newsliquid/v1/leverage?symbol=BTC/USDT:USDT&exchangeId=binance" \
   -H "$AUTH_HEADER"
 ```
 
@@ -1113,7 +1113,7 @@ curl -s "$BASE_URL/trader/newsliquid/v1/leverage?symbol=BTC/USDT:USDT&exchangeId
 获取指定交易对当前设置的杠杆倍数和保证金模式。
 
 ```bash
-curl -s "$BASE_URL/trader/newsliquid/v1/leverage/current?symbol=BTC/USDT:USDT&exchangeId=binance" \
+curl -s "$BASE_URL/open/trader/newsliquid/v1/leverage/current?symbol=BTC/USDT:USDT&exchangeId=binance" \
   -H "$AUTH_HEADER"
 ```
 
@@ -1148,7 +1148,7 @@ curl -s "$BASE_URL/trader/newsliquid/v1/leverage/current?symbol=BTC/USDT:USDT&ex
 **This endpoint is protected by the risk engine.**
 
 ```bash
-curl -s -X PUT "$BASE_URL/trader/newsliquid/v1/leverage/current" \
+curl -s -X PUT "$BASE_URL/open/trader/newsliquid/v1/leverage/current" \
   -H "$AUTH_HEADER" -H "Content-Type: application/json" \
   -d '{"exchangeId":"binance","symbol":"BTC/USDT:USDT","leverage":20}'
 ```
@@ -1182,7 +1182,7 @@ curl -s -X PUT "$BASE_URL/trader/newsliquid/v1/leverage/current" \
 获取指定交易对的保证金模式（cross 全仓 / isolated 逐仓）。
 
 ```bash
-curl -s "$BASE_URL/trader/newsliquid/v1/margin/mode?symbol=BTC/USDT:USDT&exchangeId=binance" \
+curl -s "$BASE_URL/open/trader/newsliquid/v1/margin/mode?symbol=BTC/USDT:USDT&exchangeId=binance" \
   -H "$AUTH_HEADER"
 ```
 
@@ -1211,7 +1211,7 @@ curl -s "$BASE_URL/trader/newsliquid/v1/margin/mode?symbol=BTC/USDT:USDT&exchang
 获取指定交易对的持仓模式（单向/双向）。
 
 ```bash
-curl -s "$BASE_URL/trader/newsliquid/v1/position/mode?symbol=BTC/USDT:USDT&exchangeId=binance" \
+curl -s "$BASE_URL/open/trader/newsliquid/v1/position/mode?symbol=BTC/USDT:USDT&exchangeId=binance" \
   -H "$AUTH_HEADER"
 ```
 
@@ -1241,7 +1241,7 @@ curl -s "$BASE_URL/trader/newsliquid/v1/position/mode?symbol=BTC/USDT:USDT&excha
 设置指定交易对的持仓模式。
 
 ```bash
-curl -s -X PUT "$BASE_URL/trader/newsliquid/v1/position/mode" \
+curl -s -X PUT "$BASE_URL/open/trader/newsliquid/v1/position/mode" \
   -H "$AUTH_HEADER" -H "Content-Type: application/json" \
   -d '{"exchangeId":"binance","symbol":"BTC/USDT:USDT","hedged":true}'
 ```
@@ -1275,7 +1275,7 @@ curl -s -X PUT "$BASE_URL/trader/newsliquid/v1/position/mode" \
 创建一个新的以太坊钱包代理（用于 Aster 或 Hyperliquid 交易）。
 
 ```bash
-curl -s -X POST "$BASE_URL/trader/newsliquid/v1/walletagent/create" \
+curl -s -X POST "$BASE_URL/open/trader/newsliquid/v1/walletagent/create" \
   -H "$AUTH_HEADER" -H "Content-Type: application/json" \
   -d '{"exchange":"hyperliquid"}'
 ```
@@ -1317,7 +1317,7 @@ curl -s -X POST "$BASE_URL/trader/newsliquid/v1/walletagent/create" \
 获取当前用户的所有钱包代理列表。
 
 ```bash
-curl -s "$BASE_URL/trader/newsliquid/v1/walletagent/list?exchange=hyperliquid" \
+curl -s "$BASE_URL/open/trader/newsliquid/v1/walletagent/list?exchange=hyperliquid" \
   -H "$AUTH_HEADER"
 ```
 
@@ -1355,7 +1355,7 @@ curl -s "$BASE_URL/trader/newsliquid/v1/walletagent/list?exchange=hyperliquid" \
 根据钱包地址获取钱包代理信息。
 
 ```bash
-curl -s "$BASE_URL/trader/newsliquid/v1/walletagent/address/0x1234567890abcdef?exchange=hyperliquid" \
+curl -s "$BASE_URL/open/trader/newsliquid/v1/walletagent/address/0x1234567890abcdef?exchange=hyperliquid" \
   -H "$AUTH_HEADER"
 ```
 
@@ -1392,7 +1392,7 @@ curl -s "$BASE_URL/trader/newsliquid/v1/walletagent/address/0x1234567890abcdef?e
 设置钱包代理的授权状态。
 
 ```bash
-curl -s -X PUT "$BASE_URL/trader/newsliquid/v1/walletagent/authorize" \
+curl -s -X PUT "$BASE_URL/open/trader/newsliquid/v1/walletagent/authorize" \
   -H "$AUTH_HEADER" -H "Content-Type: application/json" \
   -d '{
     "agentAddress": "0x1234567890abcdef...",
@@ -1616,14 +1616,14 @@ All risk-controlled endpoints (marked with "Risk: Yes" in Command Index) pass th
 **User says:** "What's the BTC price on Binance?"
 
 ```bash
-curl -s "$BASE_URL/trader/newsliquid/v1/market/ticker?symbol=BTC/USDT&exchangeId=binance" -H "$AUTH_HEADER"
+curl -s "$BASE_URL/open/trader/newsliquid/v1/market/ticker?symbol=BTC/USDT&exchangeId=binance" -H "$AUTH_HEADER"
 # → BTC/USDT: $67,890.50 (Bid: $67,889 | Ask: $67,891)
 ```
 
 **User says:** "Buy 0.01 BTC at $65,000"
 
 ```bash
-curl -s -X POST "$BASE_URL/trader/newsliquid/v1/orders" \
+curl -s -X POST "$BASE_URL/open/trader/newsliquid/v1/orders" \
   -H "$AUTH_HEADER" -H "Content-Type: application/json" \
   -d '{"symbol":"BTC/USDT:USDT","side":"buy","type":"limit","quantity":0.01,"price":65000,"exchangeId":"binance"}'
 # → Order placed! Buy 0.01 BTC @ $65,000 (Limit) — ID: 123456789
@@ -1632,7 +1632,7 @@ curl -s -X POST "$BASE_URL/trader/newsliquid/v1/orders" \
 **User says:** "Close my BTC position"
 
 ```bash
-curl -s -X POST "$BASE_URL/trader/newsliquid/v1/positions/close" \
+curl -s -X POST "$BASE_URL/open/trader/newsliquid/v1/positions/close" \
   -H "$AUTH_HEADER" -H "Content-Type: application/json" \
   -d '{"symbol":"BTC/USDT:USDT","side":"long","quantity":0,"exchangeId":"binance"}'
 # → Position closed! Realized P&L: +$25.00
@@ -1641,7 +1641,7 @@ curl -s -X POST "$BASE_URL/trader/newsliquid/v1/positions/close" \
 **User says:** "Set my ETH leverage to 20x"
 
 ```bash
-curl -s -X PUT "$BASE_URL/trader/newsliquid/v1/leverage/current" \
+curl -s -X PUT "$BASE_URL/open/trader/newsliquid/v1/leverage/current" \
   -H "$AUTH_HEADER" -H "Content-Type: application/json" \
   -d '{"symbol":"ETH/USDT:USDT","leverage":20,"exchangeId":"binance"}'
 # → Leverage updated! ETH/USDT:USDT: 20x

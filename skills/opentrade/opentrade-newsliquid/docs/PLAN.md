@@ -19,76 +19,76 @@
 
 所有接口基于 `https://ai.6551.io` 基础 URL，使用 Bearer Token 鉴权。
 
-路由前缀：`/trader/newsliquid/v1/`
+路由前缀：`/open/trader/newsliquid/v1/`
 
 ### 2.1 市场数据 (Market) — 5 个接口，无需风控
 
 | # | 方法 | 路径 | 说明 |
 |---|------|------|------|
-| 1 | GET | `/trader/newsliquid/v1/market/metadata` | 获取市场元数据（交易对列表、精度、限制等） |
-| 2 | GET | `/trader/newsliquid/v1/market/ticker` | 获取实时行情（最新价、24h 涨跌幅、成交量） |
-| 3 | GET | `/trader/newsliquid/v1/market/klines` | 获取 K 线数据（支持多种时间周期） |
-| 4 | GET | `/trader/newsliquid/v1/market/base-currencies` | 获取基础货币列表（USDT、BTC 等） |
-| 5 | GET | `/trader/newsliquid/v1/market/time` | 获取服务器时间 |
+| 1 | GET | `/open/trader/newsliquid/v1/market/metadata` | 获取市场元数据（交易对列表、精度、限制等） |
+| 2 | GET | `/open/trader/newsliquid/v1/market/ticker` | 获取实时行情（最新价、24h 涨跌幅、成交量） |
+| 3 | GET | `/open/trader/newsliquid/v1/market/klines` | 获取 K 线数据（支持多种时间周期） |
+| 4 | GET | `/open/trader/newsliquid/v1/market/base-currencies` | 获取基础货币列表（USDT、BTC 等） |
+| 5 | GET | `/open/trader/newsliquid/v1/market/time` | 获取服务器时间 |
 
 ### 2.2 账户信息 (Account) — 3 个接口，无需风控
 
 | # | 方法 | 路径 | 说明 |
 |---|------|------|------|
-| 6 | GET | `/trader/newsliquid/v1/account/summary` | 账户摘要（余额、杠杆、最大仓位） |
-| 7 | GET | `/trader/newsliquid/v1/account/spot` | 查询指定现货资产 |
-| 8 | GET | `/trader/newsliquid/v1/account/spots` | 查询所有现货资产 |
+| 6 | GET | `/open/trader/newsliquid/v1/account/summary` | 账户摘要（余额、杠杆、最大仓位） |
+| 7 | GET | `/open/trader/newsliquid/v1/account/spot` | 查询指定现货资产 |
+| 8 | GET | `/open/trader/newsliquid/v1/account/spots` | 查询所有现货资产 |
 
 ### 2.3 配置管理 (Config) — 2 个接口，无需风控
 
 | # | 方法 | 路径 | 说明 |
 |---|------|------|------|
-| 9 | GET | `/trader/newsliquid/v1/config` | 获取交易配置 |
-| 10 | PUT | `/trader/newsliquid/v1/config` | 更新交易配置 |
+| 9 | GET | `/open/trader/newsliquid/v1/config` | 获取交易配置 |
+| 10 | PUT | `/open/trader/newsliquid/v1/config` | 更新交易配置 |
 
 ### 2.4 订单管理 (Orders) — 5 个接口，下单/改单需风控
 
 | # | 方法 | 路径 | 风控 | 说明 |
 |---|------|------|------|------|
-| 11 | POST | `/trader/newsliquid/v1/orders` | ✅ | 创建订单（限价/市价/止盈止损） |
-| 12 | PUT | `/trader/newsliquid/v1/orders/edit` | ✅ | 修改订单 |
-| 13 | DELETE | `/trader/newsliquid/v1/orders/:orderId` | ✗ | 取消订单 |
-| 14 | GET | `/trader/newsliquid/v1/orders/open` | ✗ | 查询当前挂单 |
-| 15 | GET | `/trader/newsliquid/v1/orders/closed` | ✗ | 查询已完成订单 |
+| 11 | POST | `/open/trader/newsliquid/v1/orders` | ✅ | 创建订单（限价/市价/止盈止损） |
+| 12 | PUT | `/open/trader/newsliquid/v1/orders/edit` | ✅ | 修改订单 |
+| 13 | DELETE | `/open/trader/newsliquid/v1/orders/:orderId` | ✗ | 取消订单 |
+| 14 | GET | `/open/trader/newsliquid/v1/orders/open` | ✗ | 查询当前挂单 |
+| 15 | GET | `/open/trader/newsliquid/v1/orders/closed` | ✗ | 查询已完成订单 |
 
 ### 2.5 持仓管理 (Positions) — 3 个接口，平仓需风控
 
 | # | 方法 | 路径 | 风控 | 说明 |
 |---|------|------|------|------|
-| 16 | GET | `/trader/newsliquid/v1/positions` | ✗ | 查询当前持仓 |
-| 17 | GET | `/trader/newsliquid/v1/positions/history` | ✗ | 查询历史持仓 |
-| 18 | POST | `/trader/newsliquid/v1/positions/close` | ✅ | 平仓 |
+| 16 | GET | `/open/trader/newsliquid/v1/positions` | ✗ | 查询当前持仓 |
+| 17 | GET | `/open/trader/newsliquid/v1/positions/history` | ✗ | 查询历史持仓 |
+| 18 | POST | `/open/trader/newsliquid/v1/positions/close` | ✅ | 平仓 |
 
 ### 2.6 交易历史 (Trades) — 1 个接口，无需风控
 
 | # | 方法 | 路径 | 说明 |
 |---|------|------|------|
-| 19 | GET | `/trader/newsliquid/v1/trades/history` | 查询成交历史 |
+| 19 | GET | `/open/trader/newsliquid/v1/trades/history` | 查询成交历史 |
 
 ### 2.7 杠杆与保证金 (Leverage) — 6 个接口，修改杠杆需风控
 
 | # | 方法 | 路径 | 风控 | 说明 |
 |---|------|------|------|------|
-| 20 | GET | `/trader/newsliquid/v1/leverage` | ✗ | 获取可用杠杆倍数 |
-| 21 | GET | `/trader/newsliquid/v1/leverage/current` | ✗ | 获取当前杠杆设置 |
-| 22 | PUT | `/trader/newsliquid/v1/leverage/current` | ✅ | 修改杠杆倍数 |
-| 23 | GET | `/trader/newsliquid/v1/margin/mode` | ✗ | 获取保证金模式 |
-| 24 | GET | `/trader/newsliquid/v1/position/mode` | ✗ | 获取持仓模式（单向/双向） |
-| 25 | PUT | `/trader/newsliquid/v1/position/mode` | ✗ | 修改持仓模式 |
+| 20 | GET | `/open/trader/newsliquid/v1/leverage` | ✗ | 获取可用杠杆倍数 |
+| 21 | GET | `/open/trader/newsliquid/v1/leverage/current` | ✗ | 获取当前杠杆设置 |
+| 22 | PUT | `/open/trader/newsliquid/v1/leverage/current` | ✅ | 修改杠杆倍数 |
+| 23 | GET | `/open/trader/newsliquid/v1/margin/mode` | ✗ | 获取保证金模式 |
+| 24 | GET | `/open/trader/newsliquid/v1/position/mode` | ✗ | 获取持仓模式（单向/双向） |
+| 25 | PUT | `/open/trader/newsliquid/v1/position/mode` | ✗ | 修改持仓模式 |
 
 ### 2.8 钱包代理 (Wallet Agent) — 4 个接口，无需风控
 
 | # | 方法 | 路径 | 说明 |
 |---|------|------|------|
-| 26 | POST | `/trader/newsliquid/v1/walletagent/create` | 创建钱包代理 |
-| 27 | GET | `/trader/newsliquid/v1/walletagent/list` | 获取钱包代理列表 |
-| 28 | GET | `/trader/newsliquid/v1/walletagent/address/:address` | 按地址查询钱包代理 |
-| 29 | PUT | `/trader/newsliquid/v1/walletagent/authorize` | 授权钱包代理 |
+| 26 | POST | `/open/trader/newsliquid/v1/walletagent/create` | 创建钱包代理 |
+| 27 | GET | `/open/trader/newsliquid/v1/walletagent/list` | 获取钱包代理列表 |
+| 28 | GET | `/open/trader/newsliquid/v1/walletagent/address/:address` | 按地址查询钱包代理 |
+| 29 | PUT | `/open/trader/newsliquid/v1/walletagent/authorize` | 授权钱包代理 |
 
 **合计：29 个 API 端点**
 
@@ -235,7 +235,7 @@
 本技能使用 **curl 直接调用 API**（与 opentrade-wallet 一致），不依赖 opentrade CLI 工具。原因：
 
 1. Newsliquid 是独立的 CEX 网关，路由结构与 DEX 不同
-2. 接口路径固定（`/trader/newsliquid/v1/...`），无需 router discovery
+2. 接口路径固定（`/open/trader/newsliquid/v1/...`），无需 router discovery
 3. 保持与 opentrade-wallet 的一致性
 
 ### 文档结构
